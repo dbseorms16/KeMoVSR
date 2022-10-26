@@ -89,7 +89,18 @@ class SpyNet(nn.Module):
                 [ref[i], flow_warp(nbr[i], flow_up.permute(0, 2, 3, 1)), flow_up], 1))
         return flow
 
+class AdaptiveFM(nn.Module):
+    def __init__(self, in_channel, kernel_size):
+        super(AdaptiveFM, self).__init__()  
+        padding = get_valid_padding(kernel_size)
+        self.transformer = nn.Conv2d(in_channel, in_channel, kernel_size,
+                                     padding=padding, groups=in_channel)
 
+    def forward(self, x):
+        return self.transformer(x) + x
+
+
+    
 class TOFlow(nn.Module):
     def __init__(self, adapt_official=False):
         super(TOFlow, self).__init__()
@@ -100,6 +111,10 @@ class TOFlow(nn.Module):
         self.conv_64_64_9x9 = nn.Conv2d(64, 64, 9, 1, 4)
         self.conv_64_64_1x1 = nn.Conv2d(64, 64, 1)
         self.conv_64_3_1x1 = nn.Conv2d(64, 3, 1)
+        
+        # if ada:
+        #     # self.adafm1 = AdaptiveFM_3_1(mid_channels, 3)
+        #     self.adafm1_2 = AdaptiveFM_1_3(mid_channels, 3)
 
         self.relu = nn.ReLU(inplace=True)
 

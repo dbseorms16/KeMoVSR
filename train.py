@@ -308,8 +308,6 @@ def main():
                         psnr_rlt_avg = {}
                         psnr_total_avg = 0.
                         for val_data in val_loader:
-                            print(val_data['folder'])
-                            print(val_data['idx'])
                             
                             folder = val_data['folder'][0]
                             idx_d, max_idx = val_data['idx'][0].split('/')
@@ -361,9 +359,9 @@ def main():
                             psnr_rlt_avg[k] = sum(v) / len(v)
                             psnr_total_avg += psnr_rlt_avg[k]
                         psnr_total_avg /= len(psnr_rlt)
-                        log_s = '# Validation # PSNR: {:.4e}:'.format(psnr_total_avg)
+                        log_s = '# Validation # PSNR: {:.2f}:'.format(psnr_total_avg)
                         for k, v in psnr_rlt_avg.items():
-                            log_s += ' {}: {:.4e}'.format(k, v)
+                            log_s += ' {}: {:.2f}'.format(k, v)
                         logger.info(log_s)
                         if opt['use_tb_logger'] and 'debug' not in opt['name']:
                             tb_logger.add_scalar('psnr_avg', psnr_total_avg, current_step)
