@@ -5,7 +5,7 @@ model: video_base
 distortion: sr
 scale: 2
 gpu_ids: [1] # [0,1,2,3,4,5,6,7]
-
+kernel_size: 21
 #### datasets
 datasets:
   train:
@@ -14,7 +14,7 @@ datasets:
     interval_list: [1]
     random_reverse: false
     border_mode: false
-    data_root: '../dataset'
+    data_root: 'F:/'
     img_type: img
 
     N_frames: 7
@@ -29,13 +29,19 @@ datasets:
   val:
     name: Vid4 #+REDS
     mode: video_test
-    dataroot_GT: ../dataset/Vid4/HR #+../dataset/REDS/train/HR
-    dataroot_LQ: ../dataset/Vid4/LR_bicubic #+../dataset/REDS/train/LR_bicubic
+    dataroot_GT: F:/Vid4/GT #+../dataset/REDS/train/HR
+    dataroot_LQ: F:/Vid4/DUF_0404/LR_preset #+../dataset/REDS/train/LR_bicubic
     cache_data: True
     N_frames: 7
     padding: new_info
-    degradation_mode: preset
+    degradation_mode: set
+    sigma_x: 0.4
+    sigma_y: 0.4
+    theta: 0
 
+sigma_x: 0.4 # up and below all revised
+sigma_y: 0.4
+theta: 0
 #### network structures
 network_G:
   which_model_G: TOF
@@ -44,13 +50,13 @@ network_E:
   which_model_E: ~
 #### path
 path:
-  pretrain_model_G: ../experiments/pretrained_models/TOF_official.pth
+  pretrain_model_G: 
   strict_load: true
   resume_state: ~
 
 #### training settings: learning rate scheme, loss
 train:
-  lr_G: !!float 5e-5 # 4e-4
+  lr_G: !!float 1e-4 # 4e-4
   lr_scheme: MultiStepLR
   beta1: 0.9
   beta2: 0.99
@@ -62,11 +68,12 @@ train:
 
   pixel_criterion: l1
   pixel_weight: 1.0
-  val_freq: !!float 5000 # 1e3
+  # val_freq: !!float 5000 # 1e3
+  val_freq: !!float 1 # 1e3
 
   manual_seed: 0
 
 #### logger
 logger:
-  print_freq: 200
+  print_freq: 1
   save_checkpoint_freq: !!float 2500 #5e3

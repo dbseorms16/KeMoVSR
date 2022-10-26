@@ -88,7 +88,7 @@ def main():
         util.setup_logger('base', opt['path']['log'], 'train_' + opt['name'], level=logging.INFO,
                           screen=True, tofile=True)
         logger = logging.getLogger('base')
-        logger.info(option.dict2str(opt))
+        # logger.info(option.dict2str(opt))
         # tensorboard logger
         if opt['use_tb_logger'] and 'debug' not in opt['name']:
             version = float(torch.__version__[0:3])

@@ -109,8 +109,8 @@ class TOFlow(nn.Module):
         """
         input: x: input frames - [B, 7, 3, H, W]
         output: SR reference frame - [B, 3, H, W]
+        
         """
-
         B, T, C, H, W = x.size()
         x = normalize(x.view(-1, C, H, W)).view(B, T, C, H, W)
 

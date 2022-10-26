@@ -63,7 +63,8 @@ class VideoTestDataset(data.Dataset):
         self.imgs_SLQ, self.imgs_LQ, self.imgs_GT = {}, {}, {}
 
         if opt['degradation_mode'] == 'preset':
-            self.LQ_root = self.LQ_root + '_preset'
+            self.LQ_root = self.LQ_root 
+            # self.LQ_root = self.LQ_root + '_preset'
         else:
             if isinstance(opt_sigma_x, list):
                 assert len(opt_sigma_x) == len(opt_sigma_y)
@@ -81,7 +82,6 @@ class VideoTestDataset(data.Dataset):
         
         slr_name = '' if opt['slr_mode'] is None else '_{}'.format(opt['slr_mode'])
         
-        print(self.LQ_root)
 
         if self.name.lower() in ['vid4', 'reds', 'mm522']:
             if self.name.lower() == 'vid4':
@@ -91,7 +91,6 @@ class VideoTestDataset(data.Dataset):
                     num_settings = len(self.LQ_root)
                     subfolders_LQ_list = [util.glob_file_list(osp.join(LQ_root, 'X{}'.format(self.scale))) for LQ_root in self.LQ_root]
                     subfolders_SLQ_list = [util.glob_file_list(osp.join(LQ_root, 'X{}{}'.format(self.scale*self.scale, slr_name))) for LQ_root in self.LQ_root]
-
                     subfolders_LQ = []
                     subfolders_SLQ = []
                     for i in range(len(subfolders_LQ_list[0])):
@@ -100,6 +99,7 @@ class VideoTestDataset(data.Dataset):
 
                 else:
                     subfolders_LQ = util.glob_file_list(osp.join(self.LQ_root, 'X{}'.format(self.scale)))
+                    print(osp.join(self.LQ_root, 'X{}'.format(self.scale)))
                     subfolders_SLQ = util.glob_file_list(osp.join(self.LQ_root, 'X{}{}'.format(self.scale*self.scale, slr_name)))
 
             elif self.name.lower() == 'reds':
@@ -146,6 +146,9 @@ class VideoTestDataset(data.Dataset):
                 subfolders_SLQ = [k for k in list_slr_seq if
                                    k.find('001') >= 0 or k.find('005') >= 0 or k.find('008') >= 0 or k.find('009') >= 0]
 
+            print(subfolders_GT)
+            print(subfolders_LQ)
+            print(subfolders_SLQ)
             print(subfolders_GT[0], '\n', subfolders_LQ[0], '\n', subfolders_SLQ[0])
 
             for subfolder_SLQ, subfolder_LQ, subfolder_GT in zip(subfolders_SLQ, subfolders_LQ, subfolders_GT):

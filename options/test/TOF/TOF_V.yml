@@ -35,12 +35,12 @@ datasets:
     mode: benchmark
     # dataroot_GT: F:/Vid4_GTx2
     dataroot_GT: F:/Vid4/GT
-    dataroot_LQ: F:/Vid4/TOF
+    dataroot_LQ: F:/Vid4/TOF_0404/LR_preset
     cache_data: True
     N_frames: 7
     padding: new_info
 
-    degradation_mode: set
+    degradation_mode: preset
     degradation_type: impulse
     sigma_x: 1.2
     sigma_y: 1.2

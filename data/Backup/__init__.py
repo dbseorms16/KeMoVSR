@@ -25,23 +25,23 @@ def create_dataloader(dataset, dataset_opt, opt=None, sampler=None):
                                            pin_memory=False)
 
 
-def create_dataset(dataset_opt, **kwargs):
+def create_dataset(dataset_opt):
     mode = dataset_opt['mode']
     # datasets for image restoration
     if mode == 'LQ':
-        from data.baseline.LQ_dataset import LQDataset as D
+        from data.Backup.LQ_dataset import LQDataset as D
     elif mode == 'LQGT':
-        from data.baseline.LQGT_dataset import LQGTDataset as D
+        from data.Backup.LQGT_dataset import LQGTDataset as D
     # datasets for video restoration
     elif mode == 'REDS':
-        from data.baseline.REDS_dataset import REDSDataset as D
+        from data.Backup.REDS_dataset import REDSDataset as D
     elif mode == 'Vimeo90K':
-        from data.baseline.Vimeo90K_dataset import Vimeo90KDataset as D
+        from data.Backup.Vimeo90K_dataset import Vimeo90KDataset as D
     elif mode == 'video_test':
-        from data.baseline.video_test_dataset import VideoTestDataset as D
+        from data.Backup.video_test_dataset import VideoTestDataset as D
     else:
         raise NotImplementedError('Dataset [{:s}] is not recognized.'.format(mode))
-    dataset = D(dataset_opt, **kwargs)
+    dataset = D(dataset_opt)
 
     logger = logging.getLogger('base')
     logger.info('Dataset [{:s} - {:s}] is created.'.format(dataset.__class__.__name__,
