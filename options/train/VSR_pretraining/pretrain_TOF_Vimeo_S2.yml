@@ -1,5 +1,5 @@
 #### general settings
-name: Pretrain_FT_TOF_V_S2_0404_v2
+name: Pretrain_FT_TOF_V_S2_2004
 use_tb_logger: true
 model: video_base
 distortion: sr
@@ -20,12 +20,12 @@ datasets:
     N_frames: 7
     use_shuffle: true
     n_workers: 3  # per GPU
-    batch_size: 15
+    batch_size: 50 #15
     patch_size: 64
     use_flip: true
     use_rot: true
-    kernel_size: 21
     color: RGB
+    kernel_size: 21
   val:
     name: Vid4 #+REDS
     mode: video_test
@@ -35,11 +35,11 @@ datasets:
     N_frames: 7
     padding: new_info
     degradation_mode: set
-    sigma_x: 0.4
+    sigma_x: 2.0
     sigma_y: 0.4
     theta: 0
 
-sigma_x: 0.4 # up and below all revised
+sigma_x: 2.0 # up and below all revised
 sigma_y: 0.4
 theta: 0
 #### network structures
@@ -50,8 +50,8 @@ network_E:
   which_model_E: ~
 #### path
 path:
-  pretrain_model_G: F:/DynaVSR-master/experiments/Pretrain_FT_TOF_V_S2_0404/models/12500_G.pth
-  strict_load: true
+  pretrain_model_G: F:/DynaVSR-master/experiments/Pretrain_FT_TOF_V_S2_0404_v2/models/30000_G.pth
+  strict_load: False
   resume_state: ~
 
 #### training settings: learning rate scheme, loss
@@ -69,7 +69,7 @@ train:
   pixel_criterion: l1
   pixel_weight: 1.0
   # val_freq: !!float 5000 # 1e3
-  val_freq: !!float 3000 # 1e3
+  val_freq: !!float 10000 # 1e3
 
   manual_seed: 0
 

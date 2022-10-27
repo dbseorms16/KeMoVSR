@@ -1,7 +1,7 @@
 #### general settings
-name: V_V4_TOF_MFDN
+name: V_V4_TOF
 use_tb_logger: false
-model: video_base+lrimgestimator
+model: video_base
 distortion: sr
 scale: 2
 cpu: false
@@ -35,14 +35,13 @@ datasets:
     mode: video_test
     # dataroot_GT: F:/Vid4_GTx2
     dataroot_GT: F:/Vid4/GT
-    dataroot_LQ: F:/Vid4_2004
     cache_data: True
     N_frames: 7
     padding: new_info
 
     degradation_mode: set
     degradation_type: impulse
-    sigma_x: 2.0
+    sigma_x: 0.4
     sigma_y: 0.4
     theta: 0
 
@@ -58,11 +57,8 @@ network_E:
 
 #### path
 path:
-  bicubic_G: ../pretrained_models/BaselineVSR/TOF_Vimeo_S2.pth
-  fixed_E: ../pretrained_models/MFDN/MFDN_Vimeo.pth
-  pretrain_model_G: ../pretrained_models/TOF/Vid4_G.pth
-  pretrain_model_E: ../pretrained_models/TOF/Vid4_E.pth
-  strict_load: true
+  VSR_G: F:/DynaVSR-master/experiments/Pretrain_FT_TOF_V_S2_0404_v2/models/30000_G.pth
+  strict_load: False
   resume_state: ~
   img_save_path: ../results
 
