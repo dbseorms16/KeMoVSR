@@ -1,5 +1,5 @@
 #### general settings
-name: Pretrain_FT_TOF_V_S2_2004
+name: Pretrain_FT_TOF_V_S2_2004_1x3
 use_tb_logger: true
 model: video_base
 distortion: sr
@@ -20,7 +20,7 @@ datasets:
     N_frames: 7
     use_shuffle: true
     n_workers: 3  # per GPU
-    batch_size: 50 #15
+    batch_size: 25 #15
     patch_size: 64
     use_flip: true
     use_rot: true
@@ -50,18 +50,18 @@ network_E:
   which_model_E: ~
 #### path
 path:
-  pretrain_model_G: F:/DynaVSR-master/experiments/Pretrain_FT_TOF_V_S2_0404_v2/models/30000_G.pth
+  pretrain_model_G: F:/DynaVSR-master/pretrained_models/TOF/Vid4_G.pth
   strict_load: False
   resume_state: ~
 
 #### training settings: learning rate scheme, loss
 train:
-  lr_G: !!float 4e-3 # 4e-4
+  lr_G: !!float 4e-4 # 4e-4
   lr_scheme: MultiStepLR
   beta1: 0.9
   beta2: 0.99
   epochs: 1000
-  niter: 100000
+  niter: 10000
   warmup_iter: -1  # -1: no warm up
   lr_steps: [50000, 75000]
   lr_gamma: 0.2

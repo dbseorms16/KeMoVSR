@@ -42,7 +42,7 @@ datasets:
     degradation_mode: set
     degradation_type: impulse
     sigma_x: 0.4
-    sigma_y: 0.4
+    sigma_y: 2.0
     theta: 0
 
 #### network structures
@@ -57,7 +57,7 @@ network_E:
 
 #### path
 path:
-  VSR_G: F:/DynaVSR-master/experiments/Pretrain_FT_TOF_V_S2_0404_v2/models/30000_G.pth
+  VSR_G: ../pretrained_models/BaselineVSR/TOF_Vimeo_S2.pth
   strict_load: False
   resume_state: ~
   img_save_path: ../results

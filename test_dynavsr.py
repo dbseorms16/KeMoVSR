@@ -322,7 +322,7 @@ def main():
             psnr_rlt_avg[k] = sum(v) / len(v)
             psnr_total_avg += psnr_rlt_avg[k]
         psnr_total_avg /= len(psnr_rlt[0])
-        log_s = '# Validation # Bic PSNR: {:.4e}:'.format(psnr_total_avg)
+        log_s = '# Validation # Bic PSNR: {:.4f}:'.format(psnr_total_avg)
         for k, v in psnr_rlt_avg.items():
             log_s += ' {}: {:.4e}'.format(k, v)
         print(log_s)
@@ -334,7 +334,7 @@ def main():
             psnr_rlt_avg[k] = sum(v) / len(v)
             psnr_total_avg += psnr_rlt_avg[k]
         psnr_total_avg /= len(psnr_rlt[1])
-        log_s = '# Validation # PSNR: {:.4e}:'.format(psnr_total_avg)
+        log_s = '# Validation # PSNR: {:.4f}:'.format(psnr_total_avg)
         for k, v in psnr_rlt_avg.items():
             log_s += ' {}: {:.4e}'.format(k, v)
         print(log_s)

@@ -89,9 +89,9 @@ class VideoTestDataset(data.Dataset):
         elif opt['degradation_mode'] == 'preset':
             self.kernel_gen = rkg.Degradation(self.kernel_size, self.scale)
             if self.name.lower() == 'vid4':
-                self.kernel_dict = np.load('../experiments/pretrained_models/Vid4Gauss.npy')
+                self.kernel_dict = np.load('F:/DynaVSR-master/pretrained_models/Vid4Gauss.npy')
             elif self.name.lower() == 'reds':
-                self.kernel_dict = np.load('../experiments/pretrained_models/REDSGauss.npy')
+                self.kernel_dict = np.load('F:/DynaVSR-master/pretrained_models/REDSGauss.npy')
             else:
                 raise NotImplementedError()
 

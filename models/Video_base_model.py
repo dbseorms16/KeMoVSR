@@ -57,7 +57,7 @@ class VideoBaseModel(BaseModel):
             if train_opt['ft_tsa_only']:
                 normal_params = []
                 tsa_fusion_params = []
-                for k, v in self.netG.named_parameters():
+                for k, v in self.netG.named_parameters():                      
                     if v.requires_grad:
                         if 'tsa_fusion' in k:
                             tsa_fusion_params.append(v)
@@ -120,6 +120,9 @@ class VideoBaseModel(BaseModel):
             else:
                 optim_params = []
                 for k, v in self.netG.named_parameters():
+                    if not 'transformer' in k:
+                        v.requires_grad = False
+                        
                     if v.requires_grad:
                         optim_params.append(v)
                     else:

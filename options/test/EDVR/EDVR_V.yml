@@ -33,7 +33,7 @@ datasets:
 
   val:
     name: Vid4
-    mode: benchmark
+    mode: video_test
     dataroot_GT: F:/Vid4/GT
     dataroot_LQ: F:/Vid4/EDVR
     cache_data: True
@@ -41,10 +41,10 @@ datasets:
     #patch_size: 56
     padding: new_info
 
-    degradation_mode: set
+    degradation_mode: preset
     degradation_type: bicubic
-    sigma_x: 1.6
-    sigma_y: 1.6
+    sigma_x: 2.0
+    sigma_y: 2.0
     theta: 0
 
 #### network structures
