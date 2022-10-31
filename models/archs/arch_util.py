@@ -31,6 +31,33 @@ def make_layer(block, n_layers):
     return nn.Sequential(*layers)
 
 
+def constant_init(module, val, bias=0):
+    if hasattr(module, 'weight') and module.weight is not None:
+        nn.init.constant_(module.weight, val)
+    if hasattr(module, 'bias') and module.bias is not None:
+        nn.init.constant_(module.bias, bias)
+class VDM(nn.Module):
+    def __init__(self, in_channel):
+        super(VDM, self).__init__()
+        self.transformer = nn.Conv2d(in_channel, in_channel, (3, 1),
+                                     padding=(1, 0), groups=in_channel, bias=False, padding_mode='replicate')
+        constant_init(self.transformer, val=0, bias=0)
+
+    def forward(self, x):
+        return self.transformer(x) + x
+    
+# for g2 training
+class HDM(nn.Module):
+    def __init__(self, in_channel):
+        super(HDM, self).__init__()
+        self.transformer = nn.Conv2d(in_channel, in_channel, (1, 3),
+                                     padding=(0, 1), groups=in_channel, bias=False, padding_mode='replicate')
+        init_w = torch.tensor([[0],[1],[0]])
+        constant_init(self.transformer.weight, val=0)
+
+    def forward(self, x):
+        return self.transformer(x) + x
+
 class ResidualBlock_noBN(nn.Module):
     '''Residual block w/o BN
     ---Conv-ReLU-Conv-+-
@@ -41,14 +68,24 @@ class ResidualBlock_noBN(nn.Module):
         super(ResidualBlock_noBN, self).__init__()
         self.conv1 = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
         self.conv2 = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
+        
+        self.h_modulate_1 = HDM(nf)  
+        self.h_modulate_2 = HDM(nf)  
+        # self.v_modulate_1 = VDM(nf)  
+        # self.v_modulate_2 = VDM(nf)  
 
         # initialization
         initialize_weights([self.conv1, self.conv2], 0.1)
 
     def forward(self, x):
         identity = x
-        out = F.relu(self.conv1(x), inplace=True)
+        x = self.conv1(x)
+        x = self.h_modulate_1(x)
+        # x = self.v_modulate_1(x)
+        out = F.relu(x, inplace=True)
         out = self.conv2(out)
+        out = self.h_modulate_2(out)
+        # out = self.v_modulate_2(out)
         return identity + out
 
 

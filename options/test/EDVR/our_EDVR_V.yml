@@ -42,7 +42,7 @@ datasets:
 
     degradation_mode: set
     degradation_type: impulse
-    sigma_x: 2.0
+    sigma_x: 0.4
     sigma_y: 2.0
     theta: 0
 

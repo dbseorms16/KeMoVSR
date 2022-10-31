@@ -88,11 +88,13 @@ class BaseModel():
         load_net_clean = OrderedDict()  # remove unnecessary 'module.'
         for k, v in load_net.items():
             if k.startswith('module.'):
-                load_net_clean[k[7:]] = v
+                k[7:] = v
+
+            if 'transformer' in k:
+                load_net_clean[k] = v * 0.25
             else:
                 load_net_clean[k] = v
-            # if 'transformer' in k:
-            #     load_net_clean[k] = v * 0.5
+                
                 
         network.load_state_dict(load_net_clean, strict=strict)
 

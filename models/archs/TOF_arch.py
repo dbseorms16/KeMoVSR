@@ -101,17 +101,10 @@ class VDM(nn.Module):
     def __init__(self, in_channel):
 
         super(VDM, self).__init__()
-        # padding = get_valid_padding(kernel_size, 1)
         self.transformer = nn.Conv2d(in_channel, in_channel, (3, 1),
                                      padding=(1, 0), groups=in_channel, bias=False, padding_mode='replicate')
 
-        # w_init = torch.FloatTensor([[1],[1],[1]]).unsqueeze(0)
-        # c, w, h = w_init.size()
-        # init_w = w_init.expand(in_channel, c, w, h).clone()
-        # init_w.requires_grad = True
         constant_init(self.transformer, val=0, bias=0)
-        # with torch.no_grad():
-        #     self.transformer.weight = nn.Parameter(init_w)
 
     def forward(self, x):
         return self.transformer(x) + x
@@ -122,17 +115,12 @@ class HDM(nn.Module):
     def __init__(self, in_channel):
 
         super(HDM, self).__init__()
-        # padding = get_valid_padding(kernel_size, 1)
-        
         self.transformer = nn.Conv2d(in_channel, in_channel, (1, 3),
                                      padding=(0, 1), groups=in_channel, bias=False, padding_mode='replicate')
         
         init_w = torch.tensor([[0],[1],[0]])
         
         constant_init(self.transformer.weight, val=0)
-        # print('self.transformer.weight')
-        # print(self.transformer.weight)
-        
 
     def forward(self, x):
         return self.transformer(x) + x
@@ -151,9 +139,9 @@ class TOFlow(nn.Module):
         
         #sigma x = horizontal
         #sigma y = vertical
-        self.h_modulate_1 = HDM(64)  
-        self.h_modulate_2 = HDM(64)  
-        self.h_modulate_3 = HDM(64)  
+        # self.h_modulate_1 = HDM(64)  
+        # self.h_modulate_2 = HDM(64)  
+        # self.h_modulate_3 = HDM(64)  
         
         # self.v_modulate_1 = VDM(64)  
         # self.v_modulate_2 = VDM(64)  
@@ -195,18 +183,18 @@ class TOFlow(nn.Module):
 
         x = x_warped.view(B, -1, H, W)
         x = self.conv_3x7_64_9x9(x)
-        x = self.h_modulate_1(x)
+        # x = self.h_modulate_1(x)
         # x = self.v_modulate_1(x)
         x = self.relu(x)
         
         x = self.conv_64_64_9x9(x)
-        x = self.h_modulate_2(x)
+        # x = self.h_modulate_2(x)
         # x = self.v_modulate_2(x)
         
         x = self.relu(x)
         
         x = self.conv_64_64_1x1(x)
-        x = self.h_modulate_3(x)
+        # x = self.h_modulate_3(x)
         # x = self.v_modulate_3(x)
         
         x = self.relu(x)

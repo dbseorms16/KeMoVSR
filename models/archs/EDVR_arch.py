@@ -245,7 +245,8 @@ class EDVR(nn.Module):
         self.w_TSA = w_TSA
         self.scale = scale
         ResidualBlock_noBN_f = functools.partial(arch_util.ResidualBlock_noBN, nf=nf)
-
+        
+        ResidualBlock_noBN_f_v = functools.partial(arch_util.ResidualBlock_noBN, nf=nf)
         #### extract features (for each frame)
         if self.is_predeblur:
             self.pre_deblur = Predeblur_ResNet_Pyramid(nf=nf, HR_in=self.HR_in)
@@ -270,7 +271,7 @@ class EDVR(nn.Module):
             self.tsa_fusion = nn.Conv2d(nframes * nf, nf, 1, 1, bias=True)
 
         #### reconstruction
-        self.recon_trunk = arch_util.make_layer(ResidualBlock_noBN_f, back_RBs)
+        self.recon_trunk = arch_util.make_layer(ResidualBlock_noBN_f_v, back_RBs)
         #### upsampling
         if self.scale == 4:
             self.upconv1 = nn.Conv2d(nf, nf * 4, 3, 1, 1, bias=True)
