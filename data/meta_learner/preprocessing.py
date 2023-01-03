@@ -54,7 +54,7 @@ def eval_crop(hr, lr, scale):
     w *= scale
     return hr[:h, :w]
 
-def common_crop(*args, patch_size=96):
+def common_crop(x, patch_size=96):
     '''
     Crop given patches.
 
@@ -69,10 +69,11 @@ def common_crop(*args, patch_size=96):
     Return:
 
     '''
+    F, C, H, W = x.size()
+    
     # Find the lowest resolution
-    min_h = min(x.shape[-2] for x in args)
-    min_w = min(x.shape[-1] for x in args)
-
+    min_h = H
+    min_w = W
     py = random.randrange(0, min_h - patch_size + 1)
     px = random.randrange(0, min_w - patch_size + 1)
 
@@ -82,7 +83,7 @@ def common_crop(*args, patch_size=96):
         x = x[..., s * py:s * (py + patch_size), s * px:s * (px + patch_size)]
         return x
 
-    return _apply_all(_crop, args)
+    return _apply_all(_crop, x)
 
 def np_common_crop(*args, patch_size=96):
     '''
@@ -126,7 +127,7 @@ def get_min_in_axis(img, s_length, direction='horizontal'):
             smooth_img[:, i, :] = np.amin(img[:, data_util.index_generation(i, h, s_length, 'replicate'), :], axis=1)
     return smooth_img
 
-def crop(img_gt, img, img_lr, scale=2, patch_size=96):
+def crop(img_gt, img, scale=2, patch_size=96):
     '''
     Crop given patches.
 
@@ -170,11 +171,7 @@ def crop(img_gt, img, img_lr, scale=2, patch_size=96):
         patch_gt = img_gt[..., py*2*scale:(py*2+patch_size)*scale, px*2*scale:(px*2+patch_size)*scale]
     else:
         patch_gt = None
-    if img_lr is not None:
-        patch_superlr = img_lr[..., (py*2)//scale:(py*2+patch_size)//scale, (px*2)//scale:(px*2+patch_size)//scale]
-    else:
-        patch_superlr = None
-    return patch_gt, patch, patch_superlr
+    return patch_gt, patch
         
 
 def crop_border(*args, border=[4,4]):

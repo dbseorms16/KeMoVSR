@@ -2,10 +2,11 @@ import torch
 import models.archs.classifier as Classifier
 import models.archs.kernel_estimator as kernel_estimator
 import models.archs.LRimg_estimator as lrimg_estimator
+import models.archs.DRKE_arch as DRKE_arch
 
 
 # Generator
-def define_G(opt):
+def define_G(opt, ada=False):
     opt_net = opt['network_G']
     which_model = opt_net['which_model_G']
 
@@ -35,10 +36,17 @@ def define_G(opt):
         else:
             netG = DUF_arch.DUF_52L(scale=opt['scale'], adapt_official=True)
 
+    elif which_model == 'BasicVSRplus':
+        import models.archs.BasicVSRplus_arch as BasicVSRplus_arch
+        netG = BasicVSRplus_arch.BasicVSRPlusPlus(ada)
+    
     elif which_model == 'TOF':
         import models.archs.TOF_arch as TOF_arch
         netG = TOF_arch.TOFlow(adapt_official=True)
 
+
+    elif which_model == 'DUF':
+        import models.archs.DUF_arch as DUF_arch
     else:
         raise NotImplementedError('Generator model [{:s}] not recognized'.format(which_model))
 
@@ -67,6 +75,8 @@ def define_E(opt):
         netE = lrimg_estimator.DirectKernelEstimator_CMS(nf=opt_net['nf'])
     elif which_model == 'MFDN':
         netE = lrimg_estimator.DirectKernelEstimatorVideo(in_nc=opt_net['in_nc'], nf=opt_net['nf'], scale=scale)
+    elif which_model == 'DRKE':
+        netE = DRKE_arch.DRKE(in_nc=opt_net['in_nc'], nf=opt_net['nf'])
     else:
         raise NotImplementedError('Estimator model [{:s}] not recognized'.format(which_model))
     return netE

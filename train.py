@@ -162,7 +162,8 @@ def main():
         if opt['dist']:
             train_sampler.set_epoch(epoch)
         for _, train_data in enumerate(train_loader):
-            train_data['GT'] = train_data['GT'][:, center_idx]
+            # train_data['GT'] = train_data['GT'][:, center_idx]
+            train_data['GT'] = train_data['GT']
             current_step += 1
             if current_step > total_iters:
                 break
@@ -314,7 +315,7 @@ def main():
                             idx_d, max_idx = int(idx_d), int(max_idx)
                             
                             # border = val_data['border'].item()
-                            name = '{}/{:08d}'.format(folder, idx_d)
+                            name = '{}'.format(folder)
                             
                             train_folder = os.path.join('../results', opt['name'], name)
                             if not os.path.isdir(train_folder):
@@ -334,20 +335,23 @@ def main():
                                 
                                 if max_idx < 80 or (idx_d < max_idx/2 and max_idx >= 80):
                                 
-                                    if opt['network_G']['which_model_G'] == 'TOF':
-                                        # Bicubic upsample to match the size
-                                        LQs = val_seg['LQs']
-                                        B, T, C, H, W = LQs.shape
-                                        LQs = LQs.reshape(B*T, C, H, W)
-                                        Bic_LQs = F.interpolate(LQs, scale_factor=opt['scale'], mode='bicubic', align_corners=True)
-                                        val_seg['LQs'] = Bic_LQs.reshape(B, T, C, H*opt['scale'], W*opt['scale'])
+                                    # if opt['network_G']['which_model_G'] == 'TOF':
+                                    #     # Bicubic upsample to match the size
+                                    #     LQs = val_seg['LQs']
+                                    #     B, T, C, H, W = LQs.shape
+                                    #     LQs = LQs.reshape(B*T, C, H, W)
+                                    #     Bic_LQs = F.interpolate(LQs, scale_factor=opt['scale'], mode='bicubic', align_corners=True)
+                                    #     val_seg['LQs'] = Bic_LQs.reshape(B, T, C, H*opt['scale'], W*opt['scale'])
                                     model.feed_data(val_seg)
                                     model.test()
                                     visuals = model.get_current_visuals()
-                                    rlt_img = util.tensor2img(visuals['rlt'], mode='rgb')  # uint8, RGB
+                                    
+                                    rlt_img = visuals['rlt'][i]
+                                    rlt_img = util.tensor2img(rlt_img, mode='rgb')  # uint8, RGB
                                     gt_img = util.tensor2img(visuals['GT'], mode='rgb')  # uint8, RGB
-                                    imageio.imwrite(os.path.join(train_folder, 'hr.png'), gt_img)
-                                    imageio.imwrite(os.path.join(train_folder, 'sr.png'), rlt_img)
+                                    imageio.imwrite(os.path.join(train_folder, 'hr_{}.png'.format(idx_d)), gt_img)
+                                    imageio.imwrite(os.path.join(train_folder, 'sr_{}.png'.format(idx_d)), rlt_img)
+                                    
                                     # calculate PSNR
                                     psnr_rlt[folder][idx_d] = util.calculate_psnr(rlt_img, gt_img)
                                 

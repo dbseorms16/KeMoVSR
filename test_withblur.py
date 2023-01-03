@@ -18,7 +18,6 @@ import options.options as option
 from utils import util
 from data.baseline import loader, create_dataloader, create_dataset
 from models import create_model
-import matplotlib.pyplot as plt
 
 
 def init_dist(backend='nccl', **kwargs):
@@ -101,8 +100,9 @@ def main():
             raise NotImplementedError('Phase [{:s}] is not recognized.'.format(phase))
 
     #### create model
-    modelcp = create_model(opt)
-    modelcp_m = create_model(opt, ada=True)
+    models = create_model(opt)
+    assert len(models) == 2
+    modelcp, est_model = models[0], models[1]
 
     center_idx = (opt['datasets']['val']['N_frames']) // 2
     lr_alpha = opt['train']['maml']['lr_alpha']
@@ -141,16 +141,16 @@ def main():
             if ssim_rlt[i].get(folder, None) is None:
                 ssim_rlt[i][folder] = []
         
-        meta_train_data = {}
         meta_test_data = {}
 
+        kernel_est_data = {}
         # Make SuperLR seq using estimation model
-        meta_train_data['GT'] = val_data['LQs'][:, center_idx]
         meta_test_data['LQs'] = val_data['LQs'][0:1]
         meta_test_data['GT'] = val_data['GT'][0:1, center_idx] if with_GT else None
+        kernel_est_data['LQ'] = val_data['LQs'][0:1, center_idx]
         # Check whether the batch size of each validation data is 1
         assert val_data['LQs'].size(0) == 1
-        
+
         if opt['network_G']['which_model_G'] == 'TOF':
             LQs = meta_test_data['LQs']
             B, T, C, H, W = LQs.shape
@@ -160,76 +160,50 @@ def main():
         
         ## Before start testing
         # Bicubic Model Results
-        # bic_lq = meta_test_data['LQs'][0][center_idx].unsqueeze(0)
-        # Bic_LQs = F.interpolate(bic_lq, scale_factor=4, mode='bicubic', align_corners=True)
+        
         # max_sigx = 2.0
         # start_x = 0.4
+        est_model.load_network(opt['path']['pretrain_model_E'], est_model.netE)
+        est_model.feed_data(kernel_est_data)
+        est_model.test()
+        
+        est_model_visuals = est_model.get_current_visuals()
+        print(est_model_visuals['est_param'])
         # h_coff = (max_sigx - start_x) / start_x
+        h_coff = 1
         modelcp.load_network(opt['path']['VSR_G'], modelcp.netG)
-        # st = time.time()
+        st = time.time()
         
         modelcp.feed_data(meta_test_data, need_GT=with_GT)
         modelcp.test()
-        # et = time.time()
+        et = time.time()
 
         if with_GT:
             model_start_visuals = modelcp.get_current_visuals(need_GT=True)
             hr_image = util.tensor2img(model_start_visuals['GT'], mode='rgb')
             model_start_visuals = model_start_visuals['rlt'][center_idx]
+            
             start_image = util.tensor2img(model_start_visuals, mode='rgb')
             psnr_rlt[0][folder].append(util.calculate_psnr(start_image, hr_image))
             ssim_rlt[0][folder].append(util.calculate_ssim(start_image, hr_image))
-            
+
         # modelcp.netG = deepcopy(model.netG)
 
         # Inner Loop Update
-        baseline = opt['path']['VSR_G']
-        h = opt['path']['horizontal']
-        v =  opt['path']['vertical']
-        
-        modelcp_m.load_modulated_network(opt['path']['VSR_G'], h, v, modelcp_m.netG, h_m=1, v_m=1)
-        # st = time.time()
-        st = time.time()
-        
-        modelcp_m.feed_data(meta_test_data, need_GT=with_GT)
-        modelcp_m.test()
-        et = time.time()
+            
+
         update_time = et - st
-        
+
+        model_update_visuals = modelcp.get_current_visuals(need_GT=False)
+        update_image = util.tensor2img(model_update_visuals['rlt'][center_idx], mode='rgb')
+        # Save and calculate final image
+        print(os.path.join(maml_train_folder, '{:08d}.png'.format(idx_d)))
+        imageio.imwrite(os.path.join(maml_train_folder, '{:08d}.png'.format(idx_d)), update_image)
+
         if with_GT:
-            modulated_image = modelcp_m.get_current_visuals(need_GT=True)
-            hr_image = util.tensor2img(modulated_image['GT'], mode='rgb')
-            modulated_image = modulated_image['rlt'][center_idx]
-            update_image = util.tensor2img(modulated_image, mode='rgb')
             psnr_rlt[1][folder].append(util.calculate_psnr(update_image, hr_image))
             ssim_rlt[1][folder].append(util.calculate_ssim(update_image, hr_image))
-            
-        imageio.imwrite(os.path.join(maml_train_folder, '{:08d}.png'.format(idx_d)), update_image)
-        
-        # Bic_LQs = util.tensor2img(Bic_LQs, mode='rgb')
-        # bic_lq = util.tensor2img(bic_lq, mode='rgb')
-        
-        # Save and calculate final image
-        # imageio.imwrite(os.path.join(maml_train_folder, '{:08d}_kernel.png'.format(idx_d)), kernel)
-        # plt.clf()
-        # plt.axis('off')
-        # ax = plt.subplot(111)
-        # im = ax.imshow(kernel, vmin=kernel.min(), vmax=kernel.max())
-        # # plt.colorbar(im, ax=ax)
-        # ax = plt.gca()
-        # ax.axes.xaxis.set_visible(False)
-        # ax.axes.yaxis.set_visible(False)
-        # plt.axis('off'), plt.xticks([]), plt.yticks([])
-        # plt.tight_layout()
-        # fig = plt.gcf()
-        # fig.set_size_inches(1,1)
-        # plt.savefig(os.path.join(maml_train_folder, '{:08d}_kernel.png'.format(idx_d)),  bbox_inches='tight', pad_inches=0)
 
-        # # plt.show()
-        # # imageio.imwrite(os.path.join(maml_train_folder, '{:08d}.png'.format(idx_d)), update_image)
-        # imageio.imwrite(os.path.join(maml_train_folder, 'LR_{:08d}.png'.format(idx_d)), bic_lq)
-
-        if with_GT:
             name_df = '{}/{:08d}'.format(folder, idx_d)
             if name_df in pd_log.index:
                 pd_log.at[name_df, 'PSNR_Bicubic'] = psnr_rlt[0][folder][-1]

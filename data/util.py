@@ -181,7 +181,7 @@ def augment(img_list, hflip=True, rot=True):
             img = img.transpose(1, 0, 2)
         return img
 
-    return [_augment(img) for img in img_list]
+    return _augment(img_list)
 
 
 def augment_flow(img_list, flow_list, hflip=True, rot=True):

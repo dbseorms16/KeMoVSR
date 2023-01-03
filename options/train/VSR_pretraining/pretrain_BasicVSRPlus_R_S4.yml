@@ -1,17 +1,17 @@
 #### general settings
-name: EDVR_M_Vimeo_S2_2004_rere
+name: BasicVSR
 use_tb_logger: true
 model: video_base
 distortion: sr
-scale: 2
+scale: 4
 gpu_ids: [1] # [0,1,2,3,4,5,6,7]
 kernel_size: 21
 
 #### datasets
 datasets:
   train:
-    name: Vimeo
-    mode: Vimeo
+    name: REDS
+    mode: video_test
     interval_list: [1]
     random_reverse: false
     border_mode: false
@@ -31,8 +31,8 @@ datasets:
   val:
     name: Vid4
     mode: video_test
-    dataroot_GT: F:/Vid4/GT #+../dataset/REDS/train/HR
-    dataroot_LQ: F:/Vid4/DUF_0404/LR_preset #+../dataset/REDS/train/LR_bicubic
+    dataroot_GT: C:/Users/user/Desktop/BasicVSR_PlusPlus-master/REDS/REDS4 #+../dataset/REDS/train/HR
+    dataroot_LQ: C:/Users/user/Desktop/BasicVSR_PlusPlus-master/REDS/REDS4 #+../dataset/REDS/train/LR_bicubic
     cache_data: True
     N_frames: 5
     padding: new_info
@@ -46,7 +46,7 @@ sigma_y: 0.4
 theta: 0
 #### network structures
 network_G:
-  which_model_G: EDVR
+  which_model_G: BasicVSRplus
   nf: 64
   nframes: 5
   groups: 8

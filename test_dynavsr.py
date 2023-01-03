@@ -201,7 +201,7 @@ def main():
         if with_GT:
             model_start_visuals = modelcp.get_current_visuals(need_GT=True)
             hr_image = util.tensor2img(model_start_visuals['GT'], mode='rgb')
-            start_image = util.tensor2img(model_start_visuals['rlt'], mode='rgb')
+            start_image = util.tensor2img(model_start_visuals['rlt'][center_idx], mode='rgb')
             psnr_rlt[0][folder].append(util.calculate_psnr(start_image, hr_image))
             ssim_rlt[0][folder].append(util.calculate_ssim(start_image, hr_image))
 
@@ -239,6 +239,9 @@ def main():
                 est_modelcp.forward_without_optim()
                 superlr_seq = est_modelcp.fake_L
                 meta_train_data['LQs'] = superlr_seq
+                
+                # meta_train_data['LQs'] = torch.nn.functional.interpolate(meta_train_data['LQs'], scale_factor=2, mode='bilinear', align_corners=True)
+                # meta_train_data['GT'] = torch.nn.functional.interpolate(meta_train_data['GT'], scale_factor=2, mode='bilinear', align_corners=True)
             else:
                 meta_train_data['LQs'] = val_data['SuperLQs']
 
@@ -260,7 +263,7 @@ def main():
                 modelcp.feed_data(cropped_meta_train_data)
             else:
                 modelcp.feed_data(meta_train_data)
-
+            
             loss_train = modelcp.calculate_loss()
             
             ##################### SLR LOSS ###################
@@ -279,11 +282,15 @@ def main():
         et = time.time()
         update_time = et - st
 
+        st = time.time()
         modelcp.feed_data(meta_test_data, need_GT=with_GT)
         modelcp.test()
+        et = time.time()
+        
+        update_time = et - st
 
         model_update_visuals = modelcp.get_current_visuals(need_GT=False)
-        update_image = util.tensor2img(model_update_visuals['rlt'], mode='rgb')
+        update_image = util.tensor2img(model_update_visuals['rlt'][center_idx], mode='rgb')
         # Save and calculate final image
         print(os.path.join(maml_train_folder, '{:08d}.png'.format(idx_d)))
         imageio.imwrite(os.path.join(maml_train_folder, '{:08d}.png'.format(idx_d)), update_image)
@@ -324,7 +331,7 @@ def main():
         psnr_total_avg /= len(psnr_rlt[0])
         log_s = '# Validation # Bic PSNR: {:.4f}:'.format(psnr_total_avg)
         for k, v in psnr_rlt_avg.items():
-            log_s += ' {}: {:.4e}'.format(k, v)
+            log_s += ' {}: {:.4f}'.format(k, v)
         print(log_s)
 
         psnr_rlt_avg = {}
@@ -336,7 +343,7 @@ def main():
         psnr_total_avg /= len(psnr_rlt[1])
         log_s = '# Validation # PSNR: {:.4f}:'.format(psnr_total_avg)
         for k, v in psnr_rlt_avg.items():
-            log_s += ' {}: {:.4e}'.format(k, v)
+            log_s += ' {}: {:.4f}'.format(k, v)
         print(log_s)
 
         ssim_rlt_avg = {}

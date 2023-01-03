@@ -1,5 +1,5 @@
 #### general settings
-name: V_V4_EDVR
+name: Vimeo_Basic
 use_tb_logger: false
 model: video_base
 distortion: sr
@@ -20,7 +20,7 @@ datasets:
     padding: new_info
     img_type: img
 
-    N_frames: 5
+    N_frames: 3
     use_shuffle: true
     n_workers: 3  # per GPU
     batch_size: 10
@@ -35,20 +35,21 @@ datasets:
     name: Vid4
     mode: video_test
     dataroot_GT: F:/Vid4/GT
+    dataroot_LQ: F:/Vid4/GT
     cache_data: True
-    N_frames: 5
+    N_frames: 7
     #patch_size: 56
     padding: new_info
-
-    degradation_mode: set
+  
+    degradation_mode: preset
     degradation_type: impulse
     sigma_x: 2.0
-    sigma_y: 0.4
-    theta: 0
+    sigma_y: 2.0
+    theta: 0.0
 
 #### network structures
 network_G:
-  which_model_G: EDVR
+  which_model_G: BasicVSRplus
   nf: 64
   nframes: 5
   groups: 8
@@ -67,7 +68,9 @@ network_E:
 
 #### path
 path:
-  VSR_G: F:/DynaVSR-master/pretrained_models/EDVR/Vid4_G.pth
+  VSR_G: F:\DynaVSR-master\pretrained_models\BasicVSR/vimeo_0404_baseline.pth
+  horizontal: F:\DynaVSR-master\pretrained_models\BasicVSR/vimeo_adafm31_2004.pth
+  vertical: F:\DynaVSR-master\pretrained_models\BasicVSR/vimeo_adafm13_0420.pth
   strict_load: False
   resume_state: ~
   img_save_path: ../results

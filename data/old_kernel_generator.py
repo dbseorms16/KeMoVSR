@@ -128,7 +128,6 @@ class Degradation:
         cu = False
         if img.is_cuda:
             cu = True
-        print(self.kernel_size)
 
         weights = self.kernel.repeat((3, 1, 1, 1)).cuda()
         img = img.cuda()

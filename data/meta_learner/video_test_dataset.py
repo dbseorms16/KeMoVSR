@@ -104,6 +104,9 @@ class VideoTestDataset(data.Dataset):
         select_idx = util.index_generation(idx, max_idx, self.opt['N_frames'],
                                            padding=self.opt['padding'])
         imgs_GT = self.imgs_GT[folder].index_select(0, torch.LongTensor(select_idx))
+        
+        # imgs_GT = torch.nn.functional.interpolate(imgs_GT, scale_factor=2, mode='bilinear',
+        #                                 align_corners=True)
 
         if self.opt['degradation_mode'] == 'set':
             '''

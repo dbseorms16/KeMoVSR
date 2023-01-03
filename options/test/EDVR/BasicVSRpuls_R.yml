@@ -1,9 +1,9 @@
 #### general settings
-name: V_V4_EDVR
+name: R_R4_BasicVSR_MFDN_Scale4
 use_tb_logger: false
-model: video_base
+model: video_base+lrimgestimator
 distortion: sr
-scale: 2
+scale: 4
 cpu: false
 gpu_ids: [0]
 
@@ -20,10 +20,10 @@ datasets:
     padding: new_info
     img_type: img
 
-    N_frames: 5
+    N_frames: 7
     use_shuffle: true
     n_workers: 3  # per GPU
-    batch_size: 10
+    batch_size: 2
     patch_size: 128
     kernel_size: 21
     use_flip: true
@@ -32,28 +32,30 @@ datasets:
 
 
   val:
-    name: Vid4
+    name: REDS
     mode: video_test
-    dataroot_GT: F:/Vid4/GT
+    dataroot_GT: F:\REDS\REDS4
+    dataroot_LQ: F:\REDS\REDS4
     cache_data: True
-    N_frames: 5
+    N_frames: 7
     #patch_size: 56
     padding: new_info
-
+  
     degradation_mode: set
     degradation_type: impulse
-    sigma_x: 2.0
-    sigma_y: 0.4
-    theta: 0
+    sigma_x: 0.2
+    sigma_y: 2.0
+    theta: 0.0
+
 
 #### network structures
 network_G:
-  which_model_G: EDVR
-  nf: 64
-  nframes: 5
+  which_model_G: BasicVSRplus
+  nf: 128
+  nframes: 7
   groups: 8
   front_RBs: 5
-  back_RBs: 10
+  back_RBs: 40
   predeblur: false
   HR_in: false
   w_TSA: true
@@ -67,25 +69,29 @@ network_E:
 
 #### path
 path:
-  VSR_G: F:/DynaVSR-master/pretrained_models/EDVR/Vid4_G.pth
-  strict_load: False
+  bicubic_G: F:\DynaVSR-master\pretrained_models\BasicVSR/basicvsr_plusplus_reds.pth
+  fixed_E: ../pretrained_models/MFDN/MFDN_REDS_S4.pth
+  pretrain_model_G: F:\DynaVSR-master\pretrained_models\BasicVSR/basicvsr_plusplus_reds.pth
+  pretrain_model_E: ../pretrained_models/EDVR/REDS_E_S4.pth
+  strict_load: true
   resume_state: ~
   img_save_path: ../results
 
 #### training settings: learning rate scheme, loss
 train:
+  lr_C: !!float 1e-4 # Not Used
   lr_G: !!float 1e-5
   lr_scheme: MultiStepLR
   optim: Adam
   beta1: 0.9
   beta2: 0.99
   epochs: 20
-  niter: 30000
+  niter: 80000
   warmup_iter: -1  # -1: no warm up
-  lr_steps: [10000, 20000]
+  lr_steps: [40000, 60000]
   lr_gamma: 0.2
   loss_ftn: l1  # Loss function for updating KE model
-  use_real: false
+  use_real: False
 
   maml:
     use_patch: false
@@ -99,11 +105,11 @@ train:
 
   pixel_criterion: cb
   pixel_weight: 1.0
-  val_freq: !!float 500
+  val_freq: !!float 1e3
 
   manual_seed: 0
 
 #### logger
 logger:
   print_freq: 100
-  save_checkpoint_freq: !!float 1000
+  save_checkpoint_freq: !!float 1e3

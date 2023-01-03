@@ -95,5 +95,5 @@ train:
 
 #### logger
 logger:
-  print_freq: 100
+  print_freq: 1
   save_checkpoint_freq: !!float 500 # 1e3

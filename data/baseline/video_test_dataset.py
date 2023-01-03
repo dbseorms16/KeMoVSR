@@ -86,14 +86,14 @@ class VideoTestDataset(data.Dataset):
             self.kernel_gen = rkg.Degradation(self.kernel_size, self.scale, **gen_kwargs)
             self.gen_kwargs_l = [gen_kwargs['sigma'][0], gen_kwargs['sigma'][1], gen_kwargs['theta']]
 
-        # elif opt['degradation_mode'] == 'preset':
-        #     self.kernel_gen = rkg.Degradation(self.kernel_size, self.scale)
-        #     if self.name.lower() == 'vid4':
-        #         self.kernel_dict = np.load('../experiments/pretrained_models/Vid4Gauss.npy')
-        #     elif self.name.lower() == 'reds':
-        #         self.kernel_dict = np.load('../experiments/pretrained_models/REDSGauss.npy')
-        #     else:
-        #         raise NotImplementedError()
+        elif opt['degradation_mode'] == 'preset':
+            self.kernel_gen = rkg.Degradation(self.kernel_size, self.scale)
+            if self.name.lower() == 'vid4':
+                self.kernel_dict = np.load('F:/DynaVSR-master/pretrained_models/Vid4Gauss.npy')
+            elif self.name.lower() == 'reds':
+                self.kernel_dict = np.load('F:/DynaVSR-master/pretrained_models/REDSGauss.npy')
+            else:
+                raise NotImplementedError()
 
     def __getitem__(self, index):
         folder = self.data_info['folder'][index]
@@ -112,14 +112,16 @@ class VideoTestDataset(data.Dataset):
 
             imgs_LR = torch.stack(imgs_LR, dim=0)
             '''
-            imgs_LR = self.kernel_gen.apply(imgs_GT)
+            imgs_LR, kernel = self.kernel_gen.apply(imgs_GT)
             imgs_LR = imgs_LR.mul(255).clamp(0, 255).round().div(255)
 
         elif self.opt['degradation_mode'] == 'preset':
             my_kernel = self.kernel_dict[index]
             self.kernel_gen.set_kernel_directly(my_kernel)
-            imgs_LR = self.kernel_gen.apply(imgs_GT)
+            imgs_LR, kernel = self.kernel_gen.apply(imgs_GT)
             imgs_LR = imgs_LR.mul(255).clamp(0, 255).round().div(255)
+            imgs_LR, _ = self.kernel_gen.apply(imgs_LR)
+            
 
         else:
             kwargs = preprocessing.set_kernel_params()
@@ -132,9 +134,10 @@ class VideoTestDataset(data.Dataset):
             imgs_LR = torch.stack(imgs_LR, dim=0)
             '''
             imgs_LR = kernel_gen.apply(imgs_GT)
-
+        
         return {
             'LQs': imgs_LR,
+            'kernel' : kernel,
             'GT': imgs_GT,
             'folder': folder,
             'idx': self.data_info['idx'][index],

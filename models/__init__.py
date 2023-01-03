@@ -2,7 +2,7 @@ import logging
 logger = logging.getLogger('base')
 
 
-def create_model(opt):
+def create_model(opt, ada=False):
     models = opt['model']
 
     def _create(model):

@@ -126,4 +126,4 @@ class Degradation:
         if dimension == 3:
             lr_img = lr_img[0]
         torch.cuda.empty_cache()
-        return lr_img
+        return lr_img, self.kernel
