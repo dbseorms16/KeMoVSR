@@ -1,0 +1,58 @@
+python train_dynavsr.py -opt options/train/VSR_pretraining/pretrain_EDVR_M_Vimeo_S2.yml 
+
+pretrain_EDVR_M_Vimeo_S2.yml
+
+pretrain_EDVR_M_REDS_S2.yml
+
+python train_dynavsr.py -opt options/train/VSR_pretraining/pretrain_EDVR_M_REDS_S2.yml 
+
+python train_dynavsr.py -opt options/train/VSR_pretraining/pretrain_TOF_Vimeo_S2.yml 
+
+
+python test_dynavsr.py -opt options/test/TOF/TOF_V.yml
+
+python train_dynavsr.py -opt options/train/[Path to YML file] --exp_name [Experiment Name]
+
+
+--basemodel
+python train.py -opt options/train/VSR_pretraining/pretrain_TOF_Vimeo_S2.yml 
+
+python train.py -opt options/train/VSR_pretraining/pretrain_EDVR_M_Vimeo_S2.yml 
+
+
+--test_model
+python test.py -opt options/test/TOF/our_TOF_V.yml
+
+python test.py -opt options/test/EDVR/our_EDVR_V.yml
+
+python test.py -opt options/test/EDVR/our_BasicVSRpuls_V.yml
+
+
+python test.py -opt options/test/EDVR/our_EDVR_V.yml
+
+python test_dynavsr.py -opt options/test/TOF/TOF_V.yml
+python train_origin.py -opt options/test/TOF/TOF_V.yml
+
+python test_dynavsr.py -opt options/test/EDVR/EDVR_V.yml
+
+python test_dynavsr.py -opt options/test/EDVR/BasicVSRpuls_R.yml
+
+python test.py -opt options/test/EDVR/our_BasicVSRpuls_V.yml
+
+python train.py -opt options/train/VSR_pretraining/pretrain_EDVR_M_Vimeo_S2.yml 
+
+python test.py -opt options/train/VSR_pretraining/pretrain_EDVR_M_Vimeo_S2.yml 
+
+python test_withblur.py -opt options/test/EDVR/our_BasicVSRpuls_V.yml
+
+python test.py -opt options/test/EDVR/our_BasicVSRpuls_R.yml
+python test.py -opt options/test/EDVR/our_BasicVSRpuls_V.yml
+
+
+python train.py -opt options/train/VSR_pretraining/pretrain_BasicVSRPlus_V_S4.yml 
+
+
+python train_origin.py -opt options/test/TOF/train_TOF_V.yml
+python train_origin.py -opt options/test/TOF/train_TOF_R.yml
+
+pretrain_BasicVSRPlus_R_S4

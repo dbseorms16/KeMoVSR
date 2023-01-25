@@ -20,7 +20,7 @@ datasets:
     dataroot_GT: 'C:\Users\user\Desktop\BasicVSR_PlusPlus-master\data\REDS\train_sharp'
     dataroot_LQ: 'C:\Users\user\Desktop\BasicVSR_PlusPlus-master\data\REDS\train_sharp'
     img_type: img
-    N_frames: 7
+    N_frames: 5
     use_shuffle: true
     n_workers: 4  # per GPU
     batch_size: 10
