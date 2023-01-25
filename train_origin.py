@@ -4,7 +4,6 @@ import argparse
 import imageio
 import random
 import logging
-import pandas as pd
 
 import torch
 import torch.distributed as dist
@@ -15,6 +14,7 @@ from data.data_sampler import DistIterSampler
 import options.options as option
 from utils import util
 from data.baseline import create_dataloader, create_dataset, loader
+
 from data import util as data_util
 from models import create_model
 import utility
@@ -72,7 +72,7 @@ def main():
         util.setup_logger('base', opt['path']['log'], 'train_' + opt['name'], level=logging.INFO,
                           screen=True, tofile=True)
         logger = logging.getLogger('base')
-        # logger.info(option.dict2str(opt))
+        logger.info(option.dict2str(opt))
         # tensorboard logger
         if opt['use_tb_logger'] and 'debug' not in opt['name']:
             version = float(torch.__version__[0:3])
@@ -128,8 +128,9 @@ def main():
                 logger.info('Total epochs needed: {:d} for iters {:,d}'.format(
                     total_epochs, total_iters))
         elif phase == 'val':
-            val_set = loader.get_dataset(opt, train=False)
-            
+            val_set = create_dataset(dataset_opt, scale=opt['scale'],
+                                     kernel_size=opt['datasets']['train']['kernel_size'],
+                                    model_name=opt['network_E']['which_model_E'])
             # val_set = loader.get_dataset(opt, train=False)
             val_loader = create_dataloader(val_set, dataset_opt, opt, None)
             if rank <= 0:
@@ -177,6 +178,11 @@ def main():
                 LQs = LQs.reshape(B*T, C, H, W)
                 Bic_LQs = F.interpolate(LQs, scale_factor=opt['scale'], mode='bicubic', align_corners=True)
                 train_data['LQs'] = Bic_LQs.reshape(B, T, C, H*opt['scale'], W*opt['scale'])
+            
+            GTs = train_data['GT']
+            B, T, C, H, W = GTs.shape
+            train_data['GT'] = GTs[:, T//2, :, :, :]
+            
             model.feed_data(train_data)
             model.optimize_parameters(current_step)
 
@@ -207,6 +213,7 @@ def main():
                         img_name = os.path.splitext(os.path.basename(val_data['LQ_path'][0]))[0]
                         img_dir = os.path.join(opt['path']['val_images'], img_name)
                         util.mkdir(img_dir)
+
                         model.feed_data(val_data)
                         model.test()
 
@@ -304,100 +311,72 @@ def main():
                                     tb_logger.add_scalar(k, v, current_step)
                     else:
                         pbar = util.ProgressBar(len(val_loader))
+                        psnr_rlt = {}  # with border and center frames
                         psnr_rlt_avg = {}
                         psnr_total_avg = 0.
-                        pd_log = pd.DataFrame(columns=[ 'PSNR_Ours', 'SSIM_Ours'])
-                        
-                        # PSNR_rlt: psnr_init, psnr_before, psnr_after
-                        psnr_rlt = [{}, {}]
-                        # SSIM_rlt: ssim_init, ssim_after
-                        ssim_rlt = [{}, {}]
-                                            
                         for val_data in val_loader:
                             
                             folder = val_data['folder'][0]
-                            
-                            idx_d = int(val_data['idx'])
-                            # idx_d, max_idx = val_data['idx'][0].split('/')
-                            # idx_d, max_idx = int(idx_d), int(max_idx)
+                            idx_d, max_idx = val_data['idx'][0].split('/')
+                            idx_d, max_idx = int(idx_d), int(max_idx)
                             
                             # border = val_data['border'].item()
                             name = '{}'.format(folder)
-                            
-                            for i in range(len(psnr_rlt)):
-                                if psnr_rlt[i].get(folder, None) is None:
-                                    psnr_rlt[i][folder] = []
-                            for i in range(len(ssim_rlt)):
-                                if ssim_rlt[i].get(folder, None) is None:
-                                    ssim_rlt[i][folder] = []
                             
                             train_folder = os.path.join('../results', opt['name'], name)
                             if not os.path.isdir(train_folder):
                                 os.makedirs(train_folder, exist_ok=True)
 
-                            # if psnr_rlt.get(folder, None) is None:
-                            #     psnr_rlt[folder] = torch.zeros(max_idx, dtype=torch.float32,
-                            #                                    device='cuda')
+                            if psnr_rlt.get(folder, None) is None:
+                                psnr_rlt[folder] = torch.zeros(max_idx, dtype=torch.float32,
+                                                               device='cuda')
 
                             video_length = val_data['LQs'].size(1)
                             # print(val_data['LQs'].shape, val_data['GT'].shape)
                             for i in range(video_length):
                                 val_seg = {}
-                                select_idx = (opt['datasets']['val']['N_frames']) // 2
+                                select_idx = data_util.index_generation(i, video_length, opt['datasets']['train']['N_frames'])
+                                val_seg['LQs'] = val_data['LQs'][:, select_idx]
+                                val_seg['GT'] = val_data['GT'][:, i]
                                 
-                                val_seg['LQs'] = val_data['LQs']
-                                val_seg['GT'] = val_data['GT'][:, select_idx] 
+                                if max_idx < 80 or (idx_d < max_idx/2 and max_idx >= 80):
                                 
-                                # select_idx = data_util.index_generation(i, video_length, opt['datasets']['train']['N_frames'])
-                                # val_seg['LQs'] = val_data['LQs'][:, select_idx]
-                                # val_seg['GT'] = val_data['GT'][:, i]
-                                
-                                    # if opt['network_G']['which_model_G'] == 'TOF':
-                                    #     # Bicubic upsample to match the size
-                                    #     LQs = val_seg['LQs']
-                                    #     B, T, C, H, W = LQs.shape
-                                    #     LQs = LQs.reshape(B*T, C, H, W)
-                                    #     Bic_LQs = F.interpolate(LQs, scale_factor=opt['scale'], mode='bicubic', align_corners=True)
-                                    #     val_seg['LQs'] = Bic_LQs.reshape(B, T, C, H*opt['scale'], W*opt['scale'])
-                                model.feed_data(val_seg)
-                                model.test()
-                                visuals = model.get_current_visuals()
-                                
-                                rlt_img = visuals['rlt'][i]
-                                rlt_img = util.tensor2img(rlt_img, mode='rgb')  # uint8, RGB
-                                gt_img = util.tensor2img(visuals['GT'], mode='rgb')  # uint8, RGB
-                                # imageio.imwrite(os.path.join(train_folder, 'hr_{}.png'.format(idx_d)), gt_img)
-                                # imageio.imwrite(os.path.join(train_folder, 'sr_{}.png'.format(idx_d)), rlt_img)
-                                
-                                # calculate PSNR
-                                psnr_rlt[0][folder].append(util.calculate_psnr(rlt_img, gt_img))
-                                ssim_rlt[0][folder].append(util.calculate_ssim(rlt_img, gt_img))
-                                
-                                name_df = '{}/{:08d}'.format(folder, idx_d)
-                                if name_df in pd_log.index:
-                                    pd_log.at[name_df, 'PSNR_Ours'] = psnr_rlt[0][folder][-1]
-                                    pd_log.at[name_df, 'SSIM_Ours'] = ssim_rlt[0][folder][-1]
-                                else:
-                                    pd_log.loc[name_df] = [psnr_rlt[0][folder][-1],
-                                                        ssim_rlt[0][folder][-1]]
+                                    if opt['network_G']['which_model_G'] == 'TOF':
+                                        # Bicubic upsample to match the size
+                                        LQs = val_seg['LQs']
+                                        B, T, C, H, W = LQs.shape
+                                        LQs = LQs.reshape(B*T, C, H, W)
+                                        Bic_LQs = F.interpolate(LQs, scale_factor=opt['scale'], mode='bicubic', align_corners=True)
+                                        
+                                        val_seg['LQs'] = Bic_LQs.reshape(B, T, C, H*opt['scale'], W*opt['scale'])
+                                    model.feed_data(val_seg)
+                                    model.test()
+                                    visuals = model.get_current_visuals()
+                                    
+                                    # if opt['network_G']['which_model_G'] == 'TOF' or opt['network_G']['which_model_G'] == 'DUF':
+                                    #     rlt_img = visuals['rlt']
+                                    # else:
+                                    rlt_img = visuals['rlt']
 
-                                pd_log.to_csv(os.path.join(train_folder, 'psnr_update.csv'))
-
-                            # pbar.update('Test {} - {}: I: {:.3f}/{:.4f} \t'
-                            #                 .format(folder, idx_d,
-                            #                         psnr_rlt[0][folder][-1], ssim_rlt[0][folder][-1],
-                            #                         ))    
-                            # pbar.update('Test {} - {}'.format(folder, idx_d))
+                                    rlt_img = util.tensor2img(rlt_img, mode='rgb')  # uint8, RGB
+                                    gt_img = util.tensor2img(visuals['GT'], mode='rgb')  # uint8, RGB
+                                    imageio.imwrite(os.path.join(train_folder, 'hr_{}.png'.format(idx_d)), gt_img)
+                                    imageio.imwrite(os.path.join(train_folder, 'sr_{}.png'.format(idx_d)), rlt_img)
+                                    
+                                    # calculate PSNR
+                                    psnr_rlt[folder][idx_d] = util.calculate_psnr(rlt_img, gt_img)
+                                
+                            pbar.update('Test {} - {}/{}'.format(folder, idx_d, max_idx))
                                 # calculate PSNR
                                 # psnr, _ = utility.calc_psnr(rlt_img, gt_img)
 
-                        for k, v in psnr_rlt[0].items():
+                        for k, v in psnr_rlt.items():
                             psnr_rlt_avg[k] = sum(v) / len(v)
                             psnr_total_avg += psnr_rlt_avg[k]
-                        psnr_total_avg /= len(psnr_rlt[0])
-                        log_s = '# Validation # Bic PSNR: {:.4f}:'.format(psnr_total_avg)
+                        psnr_total_avg /= len(psnr_rlt)
+                        log_s = '# Validation # PSNR: {:.2f}:'.format(psnr_total_avg)
                         for k, v in psnr_rlt_avg.items():
-                            log_s += ' {}: {:.4f}'.format(k, v)
+                            log_s += ' {}: {:.2f}'.format(k, v)
                         logger.info(log_s)
                         if opt['use_tb_logger'] and 'debug' not in opt['name']:
                             tb_logger.add_scalar('psnr_avg', psnr_total_avg, current_step)

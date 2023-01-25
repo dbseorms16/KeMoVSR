@@ -14,7 +14,7 @@ logger = logging.getLogger('base')
 
 
 class VideoBaseModel(BaseModel):
-    def __init__(self, opt, ada=False):
+    def __init__(self, opt):
         super(VideoBaseModel, self).__init__(opt)
 
         if opt['dist']:
@@ -24,7 +24,7 @@ class VideoBaseModel(BaseModel):
         train_opt = opt['train']
 
         # define network and load pretrained models
-        self.netG = networks.define_G(opt, ada).to(self.device)
+        self.netG = networks.define_G(opt).to(self.device)
         if opt['dist']:
             self.netG = DistributedDataParallel(self.netG, device_ids=[torch.cuda.current_device()])
         else:
@@ -57,7 +57,7 @@ class VideoBaseModel(BaseModel):
             if train_opt['ft_tsa_only']:
                 normal_params = []
                 tsa_fusion_params = []
-                for k, v in self.netG.named_parameters():                      
+                for k, v in self.netG.named_parameters():
                     if v.requires_grad:
                         if 'tsa_fusion' in k:
                             tsa_fusion_params.append(v)
@@ -120,36 +120,9 @@ class VideoBaseModel(BaseModel):
             else:
                 optim_params = []
                 for k, v in self.netG.named_parameters():
-                    
-                    # if 'feature_extraction' in k:
+                    # if not 'transformer' in k:
                     #     v.requires_grad = False
                         
-                    # if 'recon_trunk' in k:
-                    #     v.requires_grad = False
-                        
-                    # if 'upconv2' in k:
-                    #     v.requires_grad = False
-                        
-                    # if 'HRconv' in k:
-                    #     v.requires_grad = False
-                        
-                    # if 'tsa_fusion' in k:
-                    #     v.requires_grad = False
-                        
-                    # if 'pcd_align' in k:
-                    #     v.requires_grad = False
-                        
-                    # if 'fea_' in k:
-                    #     v.requires_grad = False
-                        
-                    # if 'conv_' in k:
-                    #     v.requires_grad = False
-                    
-                    # if v.requires_grad == True:
-                    #     print(k)
-                    
-                    if not 'transformer' in k:
-                        v.requires_grad = False
                     if v.requires_grad:
                         optim_params.append(v)
                     else:

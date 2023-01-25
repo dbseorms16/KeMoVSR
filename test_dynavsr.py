@@ -201,7 +201,10 @@ def main():
         if with_GT:
             model_start_visuals = modelcp.get_current_visuals(need_GT=True)
             hr_image = util.tensor2img(model_start_visuals['GT'], mode='rgb')
-            start_image = util.tensor2img(model_start_visuals['rlt'][center_idx], mode='rgb')
+            # print(model_start_visuals['rlt'].size())
+            # print(model_start_visuals['rlt'].size())
+            # start_image = util.tensor2img(model_start_visuals['rlt'][center_idx], mode='rgb')
+            start_image = util.tensor2img(model_start_visuals['rlt'], mode='rgb')
             psnr_rlt[0][folder].append(util.calculate_psnr(start_image, hr_image))
             ssim_rlt[0][folder].append(util.calculate_ssim(start_image, hr_image))
 
@@ -290,7 +293,8 @@ def main():
         update_time = et - st
 
         model_update_visuals = modelcp.get_current_visuals(need_GT=False)
-        update_image = util.tensor2img(model_update_visuals['rlt'][center_idx], mode='rgb')
+        # update_image = util.tensor2img(model_update_visuals['rlt'][center_idx], mode='rgb')
+        update_image = util.tensor2img(model_update_visuals['rlt'], mode='rgb')
         # Save and calculate final image
         print(os.path.join(maml_train_folder, '{:08d}.png'.format(idx_d)))
         imageio.imwrite(os.path.join(maml_train_folder, '{:08d}.png'.format(idx_d)), update_image)

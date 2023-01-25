@@ -173,7 +173,6 @@ class DUF_16L(nn.Module):
         out = self.dynamic_filter(x_center, Fx)  # [B, 3*R, H, W]
         out += Rx.squeeze_(2)
         out = F.pixel_shuffle(out, self.scale)  # [B, 3, H, W]
-
         return out
 
 

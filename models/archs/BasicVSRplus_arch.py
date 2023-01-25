@@ -22,9 +22,7 @@ class AdaptiveFM_3_1(nn.Module):
         constant_init(self.transformer, val=0, bias=0)
 
     def forward(self, x):
-        res = x
-        x = self.transformer(x)
-        return res + x
+        return self.transformer(x) + x
     
 # for g2 training
 class AdaptiveFM_1_3(nn.Module):
@@ -51,6 +49,9 @@ class ResidualBlockNoBN(nn.Module):
         self.conv2 = nn.Conv2d(mid_channels, mid_channels, 3, 1, 1, bias=True)
         
         if ada:
+            # self.adafm1 = AdaptiveFM_1_3(mid_channels, 3)
+            # self.adafm2 = AdaptiveFM_1_3(mid_channels, 3)
+            
             self.adafm1 = AdaptiveFM_1_3(mid_channels, 3)
             self.adafm2 = AdaptiveFM_1_3(mid_channels, 3)
             # self.adafm1_2 = AdaptiveFM_1_3(mid_channels, 3)
@@ -67,49 +68,38 @@ class ResidualBlockNoBN(nn.Module):
             default_init_weights(m, 0.1)
             
         # AdaFM initializations
-        if self.ada:
-            for m in [self.adafm1, self.adafm1]:
-                default_init_weights(m, 0.1)
-            for m in [self.adafm1_2, self.adafm2_2]:
-                default_init_weights(m, 0.1)
+        # if self.ada:
+        #     for m in [self.adafm1, self.adafm1]:
+        #         default_init_weights(m, 0.1)
+        #     for m in [self.adafm1_2, self.adafm2_2]:
+        #         default_init_weights(m, 0.1)
             
     def forward(self, x):
 
         if self.ada:        
-            # identity = x
-            # # res = x
-            # # weight = nn.Parameter(data=self.adafm1.transformer(self.conv1.weight), requires_grad=False)
-            # x1 = self.conv1(x)
-            # weight = F.conv2d(self.conv1.weight, self.adafm1.transformer.weight, padding=(1, 0), groups=64)
-            # weight = nn.Parameter(data=weight, requires_grad=False)
-            # self.conv1.weight = weight
-            
-            # x = self.conv1(x) + x1
-            
-            # # x = self.adafm1.transformer(x1) + x
-            # # self.conv1.weight = weight
-            # # x2 = self.conv1(res)
-            
-            # # x = x1+x2
-            # # print(self.conv1.weight[0][0])
-            # # print(self.adafm1(self.conv1.weight)[0][0])
-            
-            # # x = F.conv2d(x, weight)
-
-            # # x = self.adafm1_2(x)
-
-            # out = self.relu(x)
-            # out = self.conv2(out)
-
-            # # out = self.adafm2_2(out)
-            # out = self.adafm2(out)
-        
             identity = x
+            
+            # res = x
+            # weight = nn.Parameter(data=self.adafm1.transformer(self.conv1.weight), requires_grad=False)
             x = self.conv1(x)
             x = self.adafm1(x)
             out = self.relu(x)
             out = self.conv2(out)
+            # out = self.adafm2_2(out)
             out = self.adafm2(out)
+            # x = self.adafm1.transformer(x1) + x
+            # self.conv1.weight = weight
+            # x2 = self.conv1(res)
+            
+            # x = x1+x2
+            # print(self.conv1.weight[0][0])
+            # print(self.adafm1(self.conv1.weight)[0][0])
+            
+            # x = F.conv2d(x, weight)
+
+            # x = self.adafm1_2(x)
+
+
         else:
         
             identity = x
@@ -166,7 +156,7 @@ class BasicVSRPlusPlus(nn.Module):
 
         # feature extraction module
         if is_low_res_input:
-            self.feat_extract = ResidualBlocksWithInputConv(3, mid_channels, 5, ada=True)
+            self.feat_extract = ResidualBlocksWithInputConv(3, mid_channels, 5, ada=False)
 
         else:
             self.feat_extract = nn.Sequential(
@@ -174,7 +164,7 @@ class BasicVSRPlusPlus(nn.Module):
                 nn.LeakyReLU(negative_slope=0.1, inplace=True),
                 nn.Conv2d(mid_channels, mid_channels, 3, 2, 1),
                 nn.LeakyReLU(negative_slope=0.1, inplace=True),
-                ResidualBlocksWithInputConv(mid_channels, mid_channels, 5, ada=True))
+                ResidualBlocksWithInputConv(mid_channels, mid_channels, 5, ada=False))
 
         # propagation branches
         self.deform_align = nn.ModuleDict()

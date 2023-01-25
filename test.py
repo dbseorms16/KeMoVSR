@@ -90,13 +90,17 @@ def main():
             if '+' in opt['datasets']['val']['name']:
                 raise NotImplementedError('Do not use + signs in test mode')
             else:
-                val_set = create_dataset(dataset_opt, scale=opt['scale'],
-                                         kernel_size=opt['datasets']['train']['kernel_size'],
-                                         model_name=opt['network_E']['which_model_E'])
-                # val_set = loader.get_dataset(opt, train=False)
+                
+                
+                # val_set = create_dataset(dataset_opt, scale=opt['scale'],
+                #                          kernel_size=opt['datasets']['train']['kernel_size'],
+                #                          model_name=opt['network_E']['which_model_E'])
+                val_set = loader.get_dataset(opt, train=False)
                 val_loader = create_dataloader(val_set, dataset_opt, opt, None)
 
-            print('Number of val images in [{:s}]: {:d}'.format(dataset_opt['name'], len(val_set)))
+            print('Number of val images in [{:s}]: {:d}, [x={}, y={}, t={}]'.format(dataset_opt['name'], len(val_set),\
+                                                                                        opt['sigma_x'], opt['sigma_y'], opt['theta'],  
+                ))
         else:
             raise NotImplementedError('Phase [{:s}] is not recognized.'.format(phase))
 
@@ -105,8 +109,6 @@ def main():
     modelcp_m = create_model(opt, ada=True)
 
     center_idx = (opt['datasets']['val']['N_frames']) // 2
-    lr_alpha = opt['train']['maml']['lr_alpha']
-    update_step = opt['train']['maml']['adapt_iter']
     with_GT = False if opt['datasets']['val']['mode'] == 'demo' else True
 
     pd_log = pd.DataFrame(columns=['PSNR_Bicubic', 'PSNR_Ours', 'SSIM_Bicubic', 'SSIM_Ours'])
@@ -120,7 +122,9 @@ def main():
     pbar = util.ProgressBar(len(val_set))
     for val_data in val_loader:
         folder = val_data['folder'][0]
-        idx_d = int(val_data['idx'][0].split('/')[0])
+        idx_d = int(val_data['idx'])
+        
+        # idx_d = int(val_data['idx'][0].split('/')[0])
         if 'name' in val_data.keys():
             name = val_data['name'][0][center_idx][0]
         else:
@@ -165,7 +169,7 @@ def main():
         # max_sigx = 2.0
         # start_x = 0.4
         # h_coff = (max_sigx - start_x) / start_x
-        modelcp.load_network(opt['path']['VSR_G'], modelcp.netG)
+        modelcp.load_network(opt['path']['pretrain_model_G'], modelcp.netG)
         # st = time.time()
         
         modelcp.feed_data(meta_test_data, need_GT=with_GT)
@@ -175,8 +179,8 @@ def main():
         if with_GT:
             model_start_visuals = modelcp.get_current_visuals(need_GT=True)
             hr_image = util.tensor2img(model_start_visuals['GT'], mode='rgb')
-            model_start_visuals = model_start_visuals['rlt'][center_idx]
             start_image = util.tensor2img(model_start_visuals, mode='rgb')
+            model_start_visuals = model_start_visuals['rlt'][center_idx]
             psnr_rlt[0][folder].append(util.calculate_psnr(start_image, hr_image))
             ssim_rlt[0][folder].append(util.calculate_ssim(start_image, hr_image))
             
@@ -187,7 +191,7 @@ def main():
         h = opt['path']['horizontal']
         v =  opt['path']['vertical']
         
-        modelcp_m.load_modulated_network(opt['path']['VSR_G'], h, v, modelcp_m.netG, h_m=1, v_m=1)
+        modelcp_m.load_modulated_network(opt['path']['pretrain_model_G'], h, v, modelcp_m.netG, h_m=1, v_m=1)
         # st = time.time()
         st = time.time()
         

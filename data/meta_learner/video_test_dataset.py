@@ -118,16 +118,17 @@ class VideoTestDataset(data.Dataset):
             imgs_LR = torch.stack(imgs_LR, dim=0)
             imgs_SuperLR = torch.stack(imgs_SuperLR, dim=0)
             '''
-            imgs_LR = self.kernel_gen.apply(imgs_GT)
+            imgs_LR, _ = self.kernel_gen.apply(imgs_GT)
             imgs_LR = imgs_LR.mul(255).clamp(0, 255).round().div(255)
             imgs_SuperLR = self.kernel_gen.apply(imgs_LR)
 
         elif self.opt['degradation_mode'] == 'preset':
             my_kernel = self.kernel_dict[index]
             self.kernel_gen.set_kernel_directly(my_kernel)
-            imgs_LR = self.kernel_gen.apply(imgs_GT)
+            imgs_LR, _ = self.kernel_gen.apply(imgs_GT)
             imgs_LR = imgs_LR.mul(255).clamp(0, 255).round().div(255)
-            imgs_SuperLR = self.kernel_gen.apply(imgs_LR)
+            imgs_SuperLR, _ = self.kernel_gen.apply(imgs_LR)
+            
 
         else:
             kwargs = preprocessing.set_kernel_params()

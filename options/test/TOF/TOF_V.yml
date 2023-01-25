@@ -11,7 +11,7 @@ gpu_ids: [0]
 datasets:
   train:
     name: Vimeo
-    mode: video_test
+    mode: LQGT
     interval_list: [1]
     random_reverse: false
     border_mode: false7
@@ -19,7 +19,6 @@ datasets:
     cache_data: True
     padding: new_info
     img_type: img
-
     N_frames: 7
     use_shuffle: true
     n_workers: 3  # per GPU
@@ -39,8 +38,7 @@ datasets:
     cache_data: True
     N_frames: 7
     padding: new_info
-
-    degradation_mode: set
+    degradation_mode: preset
     degradation_type: impulse
     sigma_x: 0.4
     sigma_y: 2.0

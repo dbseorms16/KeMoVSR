@@ -19,7 +19,6 @@ datasets:
     cache_data: True
     padding: new_info
     img_type: img
-
     N_frames: 7
     use_shuffle: true
     n_workers: 3  # per GPU

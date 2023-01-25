@@ -68,9 +68,7 @@ network_E:
 
 #### path
 path:
-  VSR_G: F:\DynaVSR-master\pretrained_models\BasicVSR/vimeo_0404_baseline.pth
-  horizontal: F:\DynaVSR-master\pretrained_models\BasicVSR/vimeo_adafm31_2004.pth
-  vertical: F:\DynaVSR-master\pretrained_models\BasicVSR/vimeo_adafm13_0420.pth
+  pretrain_model_G: F:\DynaVSR-master\pretrained_models\BasicVSR/vimeo_0404_baseline.pth
   strict_load: False
   resume_state: ~
   img_save_path: ../results

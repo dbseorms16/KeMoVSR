@@ -59,6 +59,7 @@ class Degradation:
 
         # First calculate the current center of mass for the kernel
         current_center_of_mass = measurements.center_of_mass(kernel)
+
         # The second ("+ 0.5 * ....") is for applying condition 2 from the comments above
         wanted_center_of_mass = np.array(kernel.shape) // 2 + 0.5 * (self.scale - (kernel.shape[0] % 2))
         # wanted_center_of_mass = np.array(kernel.shape) / 2 + 0.5 * (np.array(sf)[0:2] - (kernel.shape[0] % 2))
