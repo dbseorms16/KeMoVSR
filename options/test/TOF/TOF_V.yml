@@ -38,10 +38,10 @@ datasets:
     cache_data: True
     N_frames: 7
     padding: new_info
-    degradation_mode: preset
+    degradation_mode: set
     degradation_type: impulse
-    sigma_x: 0.4
-    sigma_y: 2.0
+    sigma_x: 0.2
+    sigma_y: 0.2
     theta: 0
 
 #### network structures

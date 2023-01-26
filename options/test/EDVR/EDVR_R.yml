@@ -33,18 +33,18 @@ datasets:
 
   val:
     name: REDS
-    mode: benchmark
-    dataroot_GT: C:/Users/user/Desktop/BasicVSR_PlusPlus-master/REDS/REDS4
-    dataroot_LQ: F:/DynaVSR-master/test_results/EDVR_R_test_feed2_reds
+    mode: video_test
+    dataroot_GT: F:\REDS\reds4-000
+    dataroot_LQ: F:\REDS\reds4-000
     cache_data: True
     N_frames: 5
     #patch_size: 56
     padding: new_info
 
     degradation_mode: set
-    degradation_type: bicubic
-    sigma_x: 1.6
-    sigma_y: 1.6
+    degradation_type: impluse
+    sigma_x: 0.2
+    sigma_y: 0.2
     theta: 0
 
 #### network structures

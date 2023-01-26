@@ -92,10 +92,10 @@ def main():
             else:
                 
                 
-                # val_set = create_dataset(dataset_opt, scale=opt['scale'],
-                #                          kernel_size=opt['datasets']['train']['kernel_size'],
-                #                          model_name=opt['network_E']['which_model_E'])
-                val_set = loader.get_dataset(opt, train=False)
+                val_set = create_dataset(dataset_opt, scale=opt['scale'],
+                                         kernel_size=opt['datasets']['train']['kernel_size'],
+                                         model_name=opt['network_E']['which_model_E'])
+                # val_set = loader.get_dataset(opt, train=False)
                 val_loader = create_dataloader(val_set, dataset_opt, opt, None)
 
             print('Number of val images in [{:s}]: {:d}, [x={}, y={}, t={}]'.format(dataset_opt['name'], len(val_set),\
@@ -122,7 +122,8 @@ def main():
     pbar = util.ProgressBar(len(val_set))
     for val_data in val_loader:
         folder = val_data['folder'][0]
-        idx_d = int(val_data['idx'])
+        idx_d = int(val_data['idx'][0].split('/')[0])
+        # idx_d = int(val_data['idx'])
         
         # idx_d = int(val_data['idx'][0].split('/')[0])
         if 'name' in val_data.keys():
@@ -179,8 +180,7 @@ def main():
         if with_GT:
             model_start_visuals = modelcp.get_current_visuals(need_GT=True)
             hr_image = util.tensor2img(model_start_visuals['GT'], mode='rgb')
-            start_image = util.tensor2img(model_start_visuals, mode='rgb')
-            model_start_visuals = model_start_visuals['rlt'][center_idx]
+            start_image = util.tensor2img(model_start_visuals['rlt'][center_idx], mode='rgb')
             psnr_rlt[0][folder].append(util.calculate_psnr(start_image, hr_image))
             ssim_rlt[0][folder].append(util.calculate_ssim(start_image, hr_image))
             

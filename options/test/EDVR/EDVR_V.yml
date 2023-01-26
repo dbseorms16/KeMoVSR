@@ -35,16 +35,16 @@ datasets:
     name: Vid4
     mode: video_test
     dataroot_GT: F:/Vid4/GT
-    dataroot_LQ: F:/Vid4/EDVR
+    dataroot_LQ: F:/Vid4/GT
     cache_data: True
     N_frames: 5
     #patch_size: 56
     padding: new_info
 
     degradation_mode: preset
-    degradation_type: bicubic
-    sigma_x: 2.0
-    sigma_y: 2.0
+    degradation_type: impulse
+    sigma_x: 0.2
+    sigma_y: 0.2
     theta: 0
 
 #### network structures

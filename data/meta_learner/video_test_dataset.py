@@ -120,7 +120,7 @@ class VideoTestDataset(data.Dataset):
             '''
             imgs_LR, _ = self.kernel_gen.apply(imgs_GT)
             imgs_LR = imgs_LR.mul(255).clamp(0, 255).round().div(255)
-            imgs_SuperLR = self.kernel_gen.apply(imgs_LR)
+            imgs_SuperLR, _ = self.kernel_gen.apply(imgs_LR)
 
         elif self.opt['degradation_mode'] == 'preset':
             my_kernel = self.kernel_dict[index]
@@ -144,7 +144,6 @@ class VideoTestDataset(data.Dataset):
             '''
             imgs_LR = kernel_gen.apply(imgs_GT)
             imgs_SuperLR = kernel_gen.apply(imgs_LR)
-
         return {
             'SuperLQs': imgs_SuperLR,
             'LQs': imgs_LR,

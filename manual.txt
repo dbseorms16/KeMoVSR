@@ -57,3 +57,5 @@ python train_origin.py -opt options/test/TOF/train_TOF_R.yml
 python train_origin.py -opt options/test/TOF/train_EDVR_R.yml
 
 pretrain_BasicVSRPlus_R_S4
+
+python test_dynavsr.py -opt options/test/TOF/TOF_V.yml

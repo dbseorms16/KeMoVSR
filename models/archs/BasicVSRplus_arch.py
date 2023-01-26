@@ -143,7 +143,8 @@ class BasicVSRPlusPlus(nn.Module):
                  num_blocks=7,
                  max_residue_magnitude=10,
                  is_low_res_input=True,
-                 spynet_pretrained=None,
+                spynet_pretrained='https://download.openmmlab.com/mmediting/restorers/'
+                'basicvsr/spynet_20210409-c6c1bd09.pth',
                  cpu_cache_length=100):
 
         super().__init__()
@@ -179,19 +180,19 @@ class BasicVSRPlusPlus(nn.Module):
                 deform_groups=16,
                 max_residue_magnitude=max_residue_magnitude)
             self.backbone[module] = ResidualBlocksWithInputConv(
-                (2 + i) * mid_channels, mid_channels, num_blocks, ada=True)
+                (2 + i) * mid_channels, mid_channels, num_blocks, ada=False)
 
         # upsampling module
         self.reconstruction = ResidualBlocksWithInputConv(
-            5 * mid_channels, mid_channels, 5, ada=True)
-        self.upsample1 = PixelShufflePack(
-            mid_channels, mid_channels, 2, upsample_kernel=3)
+            5 * mid_channels, mid_channels, 5, ada=False)
+        # self.upsample1 = PixelShufflePack(
+        #     mid_channels, mid_channels, 2, upsample_kernel=3)
         self.upsample2 = PixelShufflePack(
             mid_channels, 64, 2, upsample_kernel=3)
         self.conv_hr = nn.Conv2d(64, 64, 3, 1, 1)
         self.conv_last = nn.Conv2d(64, 3, 3, 1, 1)
         self.img_upsample = nn.Upsample(
-            scale_factor=4, mode='bilinear', align_corners=False)
+            scale_factor=2, mode='bilinear', align_corners=False)
 
         # activation function
         self.lrelu = nn.LeakyReLU(negative_slope=0.1, inplace=True)
@@ -360,10 +361,10 @@ class BasicVSRPlusPlus(nn.Module):
             hr = torch.cat(hr, dim=1)
             if self.cpu_cache:
                 hr = hr.cuda()
-
             hr = self.reconstruction(hr)
-            hr = self.lrelu(self.upsample1(hr))
+            # hr = self.lrelu(self.upsample1(hr))
             hr = self.lrelu(self.upsample2(hr))
+            
             hr = self.lrelu(self.conv_hr(hr))
             hr = self.conv_last(hr)
             if self.is_low_res_input:

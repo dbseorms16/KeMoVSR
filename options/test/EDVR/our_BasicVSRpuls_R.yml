@@ -34,7 +34,7 @@ datasets:
   val:
     name: REDS
     mode: video_test
-    dataroot_GT: F:\REDS\REDS4
+    dataroot_GT: F:\REDS\REDS4-sample
     cache_data: True
     N_frames: 7
     #patch_size: 56

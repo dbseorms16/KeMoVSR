@@ -1,11 +1,11 @@
 #### general settings
-name: Pretrain_TOF_V_S2_0202_more
+name: Pretrain_BasicVSR_V_S2
 use_tb_logger: true
 model: video_base
 distortion: sr
 scale: 2
 gpu_ids: [0] # [0,1,2,3,4,5,6,7]
-
+kernel_size : 21
 sigma_x: 0.2
 sigma_y: 0.2
 theta: 0
@@ -18,7 +18,7 @@ datasets:
     random_reverse: false
     border_mode: false
     data_root: 'F:\\'
-    img_type: img
+    img_type: lmdb
     N_frames: 7
     use_shuffle: true
     n_workers: 8  # per GPU
@@ -43,35 +43,49 @@ datasets:
 
 #### network structures
 network_G:
-  which_model_G: TOF
+  which_model_G: BasicVSRplus
+  nf: 64
+  nframes: 5
+  groups: 8
+  front_RBs: 5
+  back_RBs: 10
+  predeblur: false
+  HR_in: false
+  w_TSA: true
 
 network_E:
-  which_model_E: ~
+  which_model_E: MFDN
+  mode: video
+  nf: 64
+  in_nc: 3
 #### path
 path:
-  pretrain_model_G: F:/DynaVSR-master/experiments/Pretrain_TOF_V_S2_0202/models/35000_G.pth
+  pretrain_model_G: F:\DynaVSR-master\pretrained_models\BasicVSR/vimeo_0404_baseline.pth
   strict_load: true
   resume_state: ~
 
 #### training settings: learning rate scheme, loss
 train:
-  lr_G: !!float 4e-4 # 4e-4
-  lr_scheme: MultiStepLR
+  lr_G: !!float 1e-4 # 4e-4
+  lr_scheme: CosineAnnealingLR_Restart
   beta1: 0.9
   beta2: 0.99
   epochs: 1000
-  niter: 100000
+  niter: 10000
+  ft_tsa_only: 50000
   warmup_iter: -1  # -1: no warm up
-  lr_steps: [50000, 75000]
-  lr_gamma: 0.2
+  T_period: [50000, 100000, 150000, 150000, 150000]
+  restarts: [50000, 150000, 300000, 450000]
+  restart_weights: [1, 1, 1, 1]
+  eta_min: !!float 1e-7
 
-  pixel_criterion: l1
+  pixel_criterion: cb
   pixel_weight: 1.0
-  val_freq: !!float 5000 # 1e3
+  val_freq: !!float 5
 
   manual_seed: 0
 
 #### logger
 logger:
-  print_freq: 1000
-  save_checkpoint_freq: !!float 2500 #5e3
+  print_freq: 10
+  save_checkpoint_freq: !!float 2500

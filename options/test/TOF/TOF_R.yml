@@ -33,17 +33,17 @@ datasets:
 
   val:
     name: REDS
-    mode: benchmark
-    dataroot_GT: C:/Users/user/Desktop/BasicVSR_PlusPlus-master/REDS/REDS4
-    dataroot_LQ: C:/Users/user/Desktop/BasicVSR_PlusPlus-master/REDS/TOF
+    mode: video_test
+    dataroot_GT: F:\REDS\reds4-000
+    dataroot_LQ: F:\REDS\reds4-000
     cache_data: True
     N_frames: 7
     padding: new_info
 
     degradation_mode: set
-    degradation_type: impulse
-    sigma_x: 1.2
-    sigma_y: 1.2
+    degradation_type: impluse
+    sigma_x: 0.2
+    sigma_y: 0.2
     theta: 0
 
 #### network structures

@@ -163,7 +163,7 @@ def main():
             train_sampler.set_epoch(epoch)
         for _, train_data in enumerate(train_loader):
             # train_data['GT'] = train_data['GT'][:, center_idx]
-            train_data['GT'] = train_data['GT']
+            
             current_step += 1
             if current_step > total_iters:
                 break
@@ -181,7 +181,10 @@ def main():
             
             GTs = train_data['GT']
             B, T, C, H, W = GTs.shape
-            train_data['GT'] = GTs[:, T//2, :, :, :]
+            if opt['network_G']['which_model_G'] == 'BasicVSRplus':
+                train_data['GT'] = GTs
+            else :
+                train_data['GT'] = GTs[:, T//2, :, :, :]
             
             model.feed_data(train_data)
             model.optimize_parameters(current_step)
@@ -319,7 +322,6 @@ def main():
                             folder = val_data['folder'][0]
                             idx_d, max_idx = val_data['idx'][0].split('/')
                             idx_d, max_idx = int(idx_d), int(max_idx)
-                            
                             # border = val_data['border'].item()
                             name = '{}'.format(folder)
                             
@@ -331,42 +333,40 @@ def main():
                                 psnr_rlt[folder] = torch.zeros(max_idx, dtype=torch.float32,
                                                                device='cuda')
 
-                            video_length = val_data['LQs'].size(1)
+                            # video_length = val_data['LQs'].size(1)
                             # print(val_data['LQs'].shape, val_data['GT'].shape)
-                            for i in range(video_length):
-                                val_seg = {}
-                                select_idx = data_util.index_generation(i, video_length, opt['datasets']['train']['N_frames'])
-                                val_seg['LQs'] = val_data['LQs'][:, select_idx]
-                                val_seg['GT'] = val_data['GT'][:, i]
+                            val_seg = {}
+                            # select_idx = data_util.index_generation(idx_d, video_length, opt['datasets']['train']['N_frames'])
+                            # val_seg['LQs'] = val_data['LQs'][:, select_idx]
+                            val_seg['LQs'] = val_data['LQs']
+                            val_seg['GT'] = val_data['GT'][:, 7 // 2]
+                            
+                            
+                            if opt['network_G']['which_model_G'] == 'TOF':
+                                # Bicubic upsample to match the size
+                                LQs = val_seg['LQs']
+                                B, T, C, H, W = LQs.shape
+                                LQs = LQs.reshape(B*T, C, H, W)
+                                Bic_LQs = F.interpolate(LQs, scale_factor=opt['scale'], mode='bicubic', align_corners=True)
                                 
-                                if max_idx < 80 or (idx_d < max_idx/2 and max_idx >= 80):
+                                val_seg['LQs'] = Bic_LQs.reshape(B, T, C, H*opt['scale'], W*opt['scale'])
+                            model.feed_data(val_seg)
+                            model.test()
+                            visuals = model.get_current_visuals()
+                            
+                            # if opt['network_G']['which_model_G'] == 'TOF' or opt['network_G']['which_model_G'] == 'DUF':
+                            #     rlt_img = visuals['rlt']
+                            # else:
+                            rlt_img = visuals['rlt'][7 // 2]
+                            rlt_img = util.tensor2img(rlt_img, mode='rgb')  # uint8, RGB
+                            gt_img = util.tensor2img(visuals['GT'], mode='rgb')  # uint8, RGB
+                            imageio.imwrite(os.path.join(train_folder, 'hr_{}.png'.format(idx_d)), gt_img)
+                            imageio.imwrite(os.path.join(train_folder, 'sr_{}.png'.format(idx_d)), rlt_img)
+                            # calculate PSNR
+                            psnr = util.calculate_psnr(rlt_img, gt_img)
+                            psnr_rlt[folder][idx_d] = psnr
                                 
-                                    if opt['network_G']['which_model_G'] == 'TOF':
-                                        # Bicubic upsample to match the size
-                                        LQs = val_seg['LQs']
-                                        B, T, C, H, W = LQs.shape
-                                        LQs = LQs.reshape(B*T, C, H, W)
-                                        Bic_LQs = F.interpolate(LQs, scale_factor=opt['scale'], mode='bicubic', align_corners=True)
-                                        
-                                        val_seg['LQs'] = Bic_LQs.reshape(B, T, C, H*opt['scale'], W*opt['scale'])
-                                    model.feed_data(val_seg)
-                                    model.test()
-                                    visuals = model.get_current_visuals()
-                                    
-                                    # if opt['network_G']['which_model_G'] == 'TOF' or opt['network_G']['which_model_G'] == 'DUF':
-                                    #     rlt_img = visuals['rlt']
-                                    # else:
-                                    rlt_img = visuals['rlt']
-
-                                    rlt_img = util.tensor2img(rlt_img, mode='rgb')  # uint8, RGB
-                                    gt_img = util.tensor2img(visuals['GT'], mode='rgb')  # uint8, RGB
-                                    imageio.imwrite(os.path.join(train_folder, 'hr_{}.png'.format(idx_d)), gt_img)
-                                    imageio.imwrite(os.path.join(train_folder, 'sr_{}.png'.format(idx_d)), rlt_img)
-                                    
-                                    # calculate PSNR
-                                    psnr_rlt[folder][idx_d] = util.calculate_psnr(rlt_img, gt_img)
-                                
-                            pbar.update('Test {} - {}/{}'.format(folder, idx_d, max_idx))
+                            pbar.update('Test {} - {}/{} ,psnr {}'.format(folder, idx_d, max_idx, psnr))
                                 # calculate PSNR
                                 # psnr, _ = utility.calc_psnr(rlt_img, gt_img)
 
