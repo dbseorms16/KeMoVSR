@@ -78,13 +78,13 @@ class Vimeo(data.Dataset):
         
         seq_lr, _ = self.kernel_gen.apply(seq_hr)
         seq_lr = seq_lr.mul(255).clamp(0, 255).round().div(255)
-        seq_superlr, _ = self.kernel_gen.apply(seq_lr)
+        # seq_superlr, _ = self.kernel_gen.apply(seq_lr)
 
         if self.train:
-            # seq_hr, seq_lr, seq_superlr = preprocessing.crop(seq_hr, seq_lr, seq_superlr, patch_size=self.opt['datasets']['train']['patch_size'])
-            seq_hr, seq_lr, seq_superlr = preprocessing.augment(seq_hr, seq_lr, seq_superlr)
+            seq_hr, seq_lr  = preprocessing.crop(seq_hr, seq_lr,  patch_size=self.opt['datasets']['train']['patch_size'])
+            seq_hr, seq_lr  = preprocessing.augment(seq_hr, seq_lr )
 
-        return {'SuperLQs': seq_superlr,
+        return {
                 'LQs': seq_lr,
                 'GT': seq_hr,
                 # 'Kernel': kernel_gen.kernel

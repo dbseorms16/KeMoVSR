@@ -1,5 +1,5 @@
 #### general settings
-name: Pretrain_FT_TOF_V_S2
+name: Pretrain_TOF_V_S2_0202
 use_tb_logger: true
 model: video_base
 distortion: sr
@@ -22,7 +22,7 @@ datasets:
     N_frames: 7
     use_shuffle: true
     n_workers: 1  # per GPU
-    batch_size: 4
+    batch_size: 10
     patch_size: 64
     use_flip: true
     use_rot: true
@@ -67,11 +67,11 @@ train:
 
   pixel_criterion: l1
   pixel_weight: 1.0
-  val_freq: !!float 5 # 1e3
+  val_freq: !!float 5000 # 1e3
 
   manual_seed: 0
 
 #### logger
 logger:
-  print_freq: 1
+  print_freq: 1000
   save_checkpoint_freq: !!float 2500 #5e3

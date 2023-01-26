@@ -12,14 +12,14 @@ theta: 0
 #### datasets
 datasets:
   train:
-    name: video_test_dataset
-    mode: video_test_dataset
+    name: redsdataset
+    mode: redsdataset
     interval_list: [1]
     random_reverse: false
     border_mode: false
-    dataroot_GT: 'C:\Users\user\Desktop\BasicVSR_PlusPlus-master\data\REDS\train_sharp'
-    dataroot_LQ: 'C:\Users\user\Desktop\BasicVSR_PlusPlus-master\data\REDS\train_sharp'
-    img_type: img
+    dataroot_GT: 'F:\REDS\train_sharp_wval.lmdb'
+    dataroot_LQ: 'F:\REDS\train_sharp_wval.lmdb'
+    img_type: lmdb
     N_frames: 5
     use_shuffle: true
     n_workers: 4  # per GPU
@@ -35,7 +35,7 @@ datasets:
     dataroot_GT: F:\REDS\reds4-000
     dataroot_LQ: F:\REDS\reds4-000
     cache_data: True
-    N_frames: 7
+    N_frames: 5
     padding: new_info
     degradation_mode: set
     sigma_x: 0.2
@@ -86,5 +86,5 @@ train:
 
 #### logger
 logger:
-  print_freq: 1000
+  print_freq: 10
   save_checkpoint_freq: !!float 2500 #5e3

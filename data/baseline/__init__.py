@@ -34,7 +34,7 @@ def create_dataset(dataset_opt, **kwargs):
         from data.baseline.LQGT_dataset import LQGTDataset as D
     # datasets for video restoration
     elif mode == 'REDS':
-        from data.baseline.REDS_dataset import REDSDataset as D
+        from data.baseline.redsdataset import redsdataset as D
     elif mode == 'Vimeo90K':
         from data.baseline.Vimeo90K_dataset import Vimeo90KDataset as D
     elif mode == 'video_test':

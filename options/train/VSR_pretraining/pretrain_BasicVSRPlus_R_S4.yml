@@ -17,7 +17,6 @@ datasets:
     border_mode: false
     data_root: 'F:/'
     img_type: img
-
     N_frames: 5
     use_shuffle: true
     n_workers: 3  # per GPU

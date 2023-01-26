@@ -15,8 +15,8 @@ import utils.util as util  # noqa: E402
 
 
 def main():
-    dataset = 'DIV2K_demo'  # vimeo90K | REDS | general (e.g., DIV2K, 291) | DIV2K_demo |test
-    mode = 'GT'  # used for vimeo90k and REDS datasets
+    dataset = 'REDS'  # vimeo90K | REDS | general (e.g., DIV2K, 291) | DIV2K_demo |test
+    mode = 'train_sharp'  # used for vimeo90k and REDS datasets
     # vimeo90k: GT | LR | flow
     # REDS: train_sharp, train_sharp_bicubic, train_blur_bicubic, train_blur, train_blur_comp
     #       train_sharp_flowx4
@@ -290,8 +290,8 @@ def REDS(mode):
     # Set False for use limited memory
     BATCH = 5000  # After BATCH images, lmdb commits, if read_all_imgs = False
     if mode == 'train_sharp':
-        img_folder = '../../datasets/REDS/train_sharp'
-        lmdb_save_path = '../../datasets/REDS/train_sharp_wval.lmdb'
+        img_folder = 'C:/Users/user/Desktop/BasicVSR_PlusPlus-master/data/REDS/train_sharp'
+        lmdb_save_path = 'F:/REDS/train_sharp_wval.lmdb'
         H_dst, W_dst = 720, 1280
     elif mode == 'train_sharp_bicubic':
         img_folder = '../../datasets/REDS/train_sharp_bicubic'
@@ -360,7 +360,7 @@ def REDS(mode):
     pbar = util.ProgressBar(len(all_img_list))
     txn = env.begin(write=True)
     for idx, (path, key) in enumerate(zip(all_img_list, keys)):
-        pbar.update('Write {}'.format(key))
+        # pbar.update('Write {}'.format(key))
         key_byte = key.encode('ascii')
         data = dataset[key] if read_all_imgs else cv2.imread(path, cv2.IMREAD_UNCHANGED)
         if 'flow' in mode:

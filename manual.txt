@@ -54,5 +54,6 @@ python train.py -opt options/train/VSR_pretraining/pretrain_BasicVSRPlus_V_S4.ym
 
 python train_origin.py -opt options/test/TOF/train_TOF_V.yml
 python train_origin.py -opt options/test/TOF/train_TOF_R.yml
+python train_origin.py -opt options/test/TOF/train_EDVR_R.yml
 
 pretrain_BasicVSRPlus_R_S4
