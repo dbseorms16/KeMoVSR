@@ -1,5 +1,5 @@
 #### general settings
-name: Pretrain_BasicVSR_R_S2
+name: train0202_baselineReds
 use_tb_logger: true
 model: video_base
 distortion: sr
@@ -32,8 +32,8 @@ datasets:
   val:
     name: REDS #+REDS
     mode: video_test
-    dataroot_GT: F:\REDS\reds4-000
-    dataroot_LQ: F:\REDS\reds4-000
+    dataroot_GT: F:\REDS\val0
+    dataroot_LQ: F:\REDS\val0
     cache_data: True
     N_frames: 7
     padding: new_info
@@ -46,7 +46,7 @@ datasets:
 network_G:
   which_model_G: BasicVSRplus
   nf: 64
-  nframes: 5
+  nframes: 7
   groups: 8
   front_RBs: 5
   back_RBs: 10
@@ -61,32 +61,36 @@ network_E:
   in_nc: 3
 #### path
 path:
-  pretrain_model_G: F:\DynaVSR-master\pretrained_models\BasicVSR/vimeo_0404_baseline.pth
+  bicubic_G: 
+  fixed_E: ../pretrained_models/MFDN/MFDN_Vimeo.pth
+  pretrain_model_G: ../pretrained_models/TOF/Vid4_G.pth
+  pretrain_model_E: ../pretrained_models/TOF/Vid4_E.pth
   strict_load: true
   resume_state: ~
+  img_save_path: ../results
 
 #### training settings: learning rate scheme, loss
 train:
-  lr_G: !!float 1e-4 # 4e-4
-  lr_scheme: CosineAnnealingLR_Restart
+  lr_G: !!float 1e-4
+  lr_scheme: MultiStepLR
+  optim: Adam
   beta1: 0.9
   beta2: 0.99
-  epochs: 1000
-  niter: 10000
-  ft_tsa_only: 50000
+  epochs: 2000000
+  niter: 3000000
   warmup_iter: -1  # -1: no warm up
-  T_period: [50000, 100000, 150000, 150000, 150000]
-  restarts: [50000, 150000, 300000, 450000]
-  restart_weights: [1, 1, 1, 1]
-  eta_min: !!float 1e-7
+  lr_steps: [200000, 500000]
+  lr_gamma: 0.2
+  loss_ftn: l1  # Loss function for updating KE model
+  use_real: false
 
   pixel_criterion: cb
   pixel_weight: 1.0
-  val_freq: !!float 5
+  val_freq: !!float 1000
 
   manual_seed: 0
 
 #### logger
 logger:
-  print_freq: 10
-  save_checkpoint_freq: !!float 2500
+  print_freq: 200
+  save_checkpoint_freq: !!float 1000 # 1e3

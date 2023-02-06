@@ -18,7 +18,7 @@ from data.baseline import create_dataloader, create_dataset, loader
 from data import util as data_util
 from models import create_model
 import utility
-
+from tqdm import tqdm
 def init_dist(backend='nccl', **kwargs):
     """initialization for distributed training"""
     if mp.get_start_method(allow_none=True) != 'spawn':
@@ -142,6 +142,8 @@ def main():
 
     #### create model
     model = create_model(opt)
+    model.load_modulated_network(opt['path']['bicubic_G'], model.netG)
+    
     center_idx = opt['datasets']['train']['N_frames'] // 2
 
     #### resume training
@@ -169,7 +171,9 @@ def main():
                 break
             #### update learning rate
             model.update_learning_rate(current_step, warmup_iter=opt['train']['warmup_iter'])
-
+            
+            LQs = train_data['LQs']
+            B, T, C, H, W = LQs.shape
             #### training
             if opt['network_G']['which_model_G'] == 'TOF':
                 # Bicubic upsample to match the size
@@ -185,7 +189,34 @@ def main():
                 train_data['GT'] = GTs
             else :
                 train_data['GT'] = GTs[:, T//2, :, :, :]
+                        
+            thetas = train_data['kernelparam']['theta']
+            sigxs =  train_data['kernelparam']['sigma'][0]
+            sigys =  train_data['kernelparam']['sigma'][1]
+            h_ms = []
+            v_ms = []
+            for i in range(B):
+                theta = thetas[i]
+                sigx = sigxs[i]
+                sigy = sigys[i]
             
+                if abs(theta) > 0 and abs(sigx - sigy) > 0.2:
+                    sigx *= 0.7
+                    sigy *= 0.7
+                    
+                h_m = sigx * 0.55
+                v_m = sigy * 0.55
+                
+                if sigx < 0.6:
+                    h_m = 0.1
+                if sigy < 0.6:
+                    v_m = 0.1
+                    
+                h_ms.append(h_m)
+                v_ms.append(v_m)
+            
+            train_data['h_m'] = torch.tensor(h_ms, dtype=torch.float).cuda()
+            train_data['v_m'] = torch.tensor(v_ms, dtype=torch.float).cuda()
             model.feed_data(train_data)
             model.optimize_parameters(current_step)
 
@@ -217,6 +248,7 @@ def main():
                         img_dir = os.path.join(opt['path']['val_images'], img_name)
                         util.mkdir(img_dir)
 
+ 
                         model.feed_data(val_data)
                         model.test()
 
@@ -245,8 +277,8 @@ def main():
                     if opt['dist']:
                         # multi-GPU testing
                         psnr_rlt = {}  # with border and center frames
-                        if rank == 0:
-                            pbar = util.ProgressBar(len(val_set))
+                        # if rank == 0:
+                        #     # pbar = util.ProgressBar(len(val_set))
                         for idx in range(rank, len(val_set), world_size):
                             val_data = val_set[idx]
                             val_data['LQs'].unsqueeze_(0)
@@ -284,8 +316,8 @@ def main():
                                 visuals = model.get_current_visuals()
                                 rlt_img = util.tensor2img(visuals['rlt'], mode='rgb')  # uint8, RGB
                                 gt_img = util.tensor2img(visuals['GT'], mode='rgb')  # uint8, RGB
-                                imageio.imwrite(os.path.join(train_folder, 'hr.png'), gt_img)
-                                imageio.imwrite(os.path.join(train_folder, 'sr.png'), rlt_img)
+                                # imageio.imwrite(os.path.join(train_folder, 'hr.png'), gt_img)
+                                # imageio.imwrite(os.path.join(train_folder, 'sr.png'), rlt_img)
                                 # calculate PSNR
                                 psnr_rlt[folder][idx_d] = util.calculate_psnr(rlt_img, gt_img)
 
@@ -313,11 +345,14 @@ def main():
                                 for k, v in psnr_rlt_avg.items():
                                     tb_logger.add_scalar(k, v, current_step)
                     else:
-                        pbar = util.ProgressBar(len(val_loader))
+                        # pbar = util.ProgressBar(len(val_loader))
                         psnr_rlt = {}  # with border and center frames
                         psnr_rlt_avg = {}
                         psnr_total_avg = 0.
-                        for val_data in val_loader:
+                        
+                        tqdm_test = tqdm(val_loader, ncols=80)
+                        
+                        for val_data in tqdm_test:
                             
                             folder = val_data['folder'][0]
                             idx_d, max_idx = val_data['idx'][0].split('/')
@@ -350,6 +385,38 @@ def main():
                                 Bic_LQs = F.interpolate(LQs, scale_factor=opt['scale'], mode='bicubic', align_corners=True)
                                 
                                 val_seg['LQs'] = Bic_LQs.reshape(B, T, C, H*opt['scale'], W*opt['scale'])
+                            
+                            thetas = val_data['kernelparam']['theta']
+                            sigxs =  val_data['kernelparam']['sigma'][0]
+                            sigys =  val_data['kernelparam']['sigma'][1]
+                            val_h_ms = []
+                            val_v_ms = []
+                            LQs = val_data['LQs']
+                            B, T, C, H, W = LQs.shape
+                            
+                            for i in range(B):
+                                theta = thetas[i]
+                                sigx = sigxs[i]
+                                sigy = sigys[i]
+                            
+                                if abs(theta) > 0 and abs(sigx - sigy) > 0.2:
+                                    sigx *= 0.7
+                                    sigy *= 0.7
+                                    
+                                h_m = sigx * 0.55
+                                v_m = sigy * 0.55
+                                
+                                if sigx < 0.6:
+                                    h_m = 0.1
+                                if sigy < 0.6:
+                                    v_m = 0.1
+                                    
+                                val_h_ms.append(h_m)
+                                val_v_ms.append(v_m)
+                            
+                            val_seg['h_m'] = torch.tensor(val_h_ms, dtype=torch.float).cuda()
+                            val_seg['v_m'] = torch.tensor(val_v_ms, dtype=torch.float).cuda()
+                            
                             model.feed_data(val_seg)
                             model.test()
                             visuals = model.get_current_visuals()
@@ -360,13 +427,12 @@ def main():
                             rlt_img = visuals['rlt'][7 // 2]
                             rlt_img = util.tensor2img(rlt_img, mode='rgb')  # uint8, RGB
                             gt_img = util.tensor2img(visuals['GT'], mode='rgb')  # uint8, RGB
-                            imageio.imwrite(os.path.join(train_folder, 'hr_{}.png'.format(idx_d)), gt_img)
-                            imageio.imwrite(os.path.join(train_folder, 'sr_{}.png'.format(idx_d)), rlt_img)
+                            # imageio.imwrite(os.path.join(train_folder, 'hr_{}.png'.format(idx_d)), gt_img)
+                            # imageio.imwrite(os.path.join(train_folder, 'sr_{}.png'.format(idx_d)), rlt_img)
                             # calculate PSNR
                             psnr = util.calculate_psnr(rlt_img, gt_img)
                             psnr_rlt[folder][idx_d] = psnr
-                                
-                            pbar.update('Test {} - {}/{} ,psnr {}'.format(folder, idx_d, max_idx, psnr))
+                            # pbar.update('Test {} - {}/{} ,psnr {}'.format(folder, idx_d, max_idx, psnr))
                                 # calculate PSNR
                                 # psnr, _ = utility.calc_psnr(rlt_img, gt_img)
 

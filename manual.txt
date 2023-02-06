@@ -54,8 +54,37 @@ python train.py -opt options/train/VSR_pretraining/pretrain_BasicVSRPlus_V_S4.ym
 
 python train_origin.py -opt options/test/TOF/train_TOF_V.yml
 python train_origin.py -opt options/test/TOF/train_TOF_R.yml
+python train_origin.py -opt options/test/TOF/train_BasicVSR_R.yml
 python train_origin.py -opt options/test/TOF/train_EDVR_R.yml
-
+test_dynavsr.py
 pretrain_BasicVSRPlus_R_S4
 
+python test_dynavsr.py -opt options/test/TOF/TOF_R.yml
 python test_dynavsr.py -opt options/test/TOF/TOF_V.yml
+python test_dynavsr.py -opt options/test/TOF/EDTM_V_S4.yml
+
+
+python test_dynavsr.py -opt options/test/TOF/TOF_V.yml
+
+
+
+python test_dynavsr.py -opt options/test/TOF/train_BasicVSR_V.yml
+python test_dynavsr.py -opt options/test/TOF/train_BasicVSR_R.yml
+
+python train_origin.py -opt options/test/TOF/train_BasicVSR_V.yml
+
+python test.py -opt options/test/TOF/train_BasicVSR_V.yml
+
+python test_dynavsr.py -opt options/test/EDVR/EDVR_V_S4.yml
+
+python test_dynavsr.py -opt options/test/DUF/DUF_V.yml
+python test_dynavsr.py -opt options/test/EDVR/EDVR_V.yml
+
+
+python test.py -opt options/test/TOF/train_BasicVSR_V.yml
+
+python test.py -opt options/test/TOF/train_BasicVSR_R.yml
+python test_dynavsr.py -opt options/test/EDVR/EDVR_R.yml
+
+python train_origin.py -opt options/test/TOF/train_BasicVSR_R.yml
+python test.py -opt options/test/TOF/train_BasicVSR_V.yml

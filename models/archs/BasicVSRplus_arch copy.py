@@ -48,17 +48,17 @@ class ResidualBlockNoBN(nn.Module):
         
         self.conv2 = nn.Conv2d(mid_channels, mid_channels, 3, 1, 1, bias=True)
         
-        if ada:
+        # if ada:
             # self.adafm1 = AdaptiveFM_1_3(mid_channels, 3)
             # self.adafm2 = AdaptiveFM_1_3(mid_channels, 3)
             # self.transformer_y = nn.Conv2d(in_channel, in_channel, (3, 1), bias=False,
             #                              padding=(1, 0), groups=in_channel, padding_mode='replicate')
             
-            self.transformer_x_1 = nn.Conv2d(mid_channels, mid_channels, (3, 1), bias=False,
-                                         padding=(1, 0), groups=mid_channels, padding_mode='replicate')
+            # self.transformer_x_1 = nn.Conv2d(mid_channels, mid_channels, (3, 1), bias=False,
+            #                              padding=(1, 0), groups=mid_channels, padding_mode='replicate')
             
-            self.transformer_x_2 = nn.Conv2d(mid_channels, mid_channels, (3, 1), bias=False,
-                                         padding=(1, 0), groups=mid_channels, padding_mode='replicate')
+            # self.transformer_x_2 = nn.Conv2d(mid_channels, mid_channels, (3, 1), bias=False,
+            #                              padding=(1, 0), groups=mid_channels, padding_mode='replicate')
             # self.transformer_x_1 = nn.Conv2d(mid_channels, mid_channels, (3, 1), bias=False,
             #                     padding=(1, 0), groups=mid_channels, padding_mode='replicate')
             
@@ -77,8 +77,8 @@ class ResidualBlockNoBN(nn.Module):
         # if res_scale = 1.0, use scaled kaiming_init, as in MSRResNet.
         # if res_scale == 1.0:
         #     self.init_weights()
-            constant_init(self.transformer_x_1, val=0)
-            constant_init(self.transformer_x_2, val=0)
+            # constant_init(self.transformer_x_1, val=0)
+            # constant_init(self.transformer_x_2, val=0)
             
             # constant_init(self.transformer_y_1, val=0)
             # constant_init(self.transformer_y_2, val=0)
@@ -99,21 +99,18 @@ class ResidualBlockNoBN(nn.Module):
 
         if self.ada:        
             identity = x
-            # moduled_x_1 = self.transformer_x_1(x) * h_m
-            moduled_x_1 = self.transformer_x_1(x)
-            x = x + moduled_x_1
             x = self.conv1(x)
+            # moduled_x_1 = self.transformer_x_1(x) * h_m
             # moduled_y_1 = self.transformer_y_1(x) * v_m
             # out = self.relu(x + moduled_x_1+  moduled_y_1 )
             out = self.relu(x)
-            
-            moduled_x_2 = self.transformer_x_2(out)
-            out = out + moduled_x_2
             out = self.conv2(out)
             
+            # moduled_x_2 = self.transformer_x_2(out) * h_m
             # moduled_y_2 = self.transformer_y_2(out) * v_m
             
             # out = out + moduled_x_2 + moduled_y_2 
+            out = out  
         else:
         
             identity = x
@@ -168,7 +165,6 @@ class BasicVSRPlusPlus(nn.Module):
 
         # optical flow
         self.spynet = SPyNet()
-        # self.spynet = SPyNet(spynet_pretrained)
 
         # feature extraction module
         if is_low_res_input:
@@ -179,10 +175,9 @@ class BasicVSRPlusPlus(nn.Module):
                 nn.Conv2d(3, mid_channels, 3, 2, 1),
                 nn.LeakyReLU(negative_slope=0.1, inplace=True),
                 nn.Conv2d(mid_channels, mid_channels, 3, 2, 1),
-                
                 nn.LeakyReLU(negative_slope=0.1, inplace=True),
                 ResidualBlocksWithInputConv(mid_channels, mid_channels, 5, ada=True))
-        
+
         # propagation branches
         self.deform_align = nn.ModuleDict()
         self.backbone = nn.ModuleDict()
@@ -396,7 +391,7 @@ class BasicVSRPlusPlus(nn.Module):
 
         return torch.stack(outputs, dim=1)
 
-    def forward(self, lqs, h_m=None, v_m=None):
+    def forward(self, lqs, h_m, v_m):
         """Forward function for BasicVSR++.
 
         Args:
@@ -576,6 +571,7 @@ class ResidualBlocksWithInputConv(nn.Module):
         main.append(
             make_layer(
                 ResidualBlockNoBN, num_blocks, mid_channels=out_channels, ada=ada))
+
         self.main = nn.Sequential(*main)
 
     def forward(self, feat, h_m, v_m):

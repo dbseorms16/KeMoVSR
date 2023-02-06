@@ -1,5 +1,5 @@
 #### general settings
-name: R_R4_EDVR_MFDN_Scale4
+name: V_V4_EDTM_MFDN
 use_tb_logger: false
 model: video_base+lrimgestimator
 distortion: sr
@@ -10,8 +10,8 @@ gpu_ids: [0]
 #### datasets
 datasets:
   train:
-    name: REDS
-    mode: video_test
+    name: Vimeo
+    mode: LQGT
     interval_list: [1]
     random_reverse: false
     border_mode: false7
@@ -19,45 +19,37 @@ datasets:
     cache_data: True
     padding: new_info
     img_type: img
-
-    N_frames: 5
+    N_frames: 3
     use_shuffle: true
-    n_workers: 3  # per GPU
-    batch_size: 2
-    patch_size: 128
+    n_workers: 0  # per GPU
+    batch_size: 4
     kernel_size: 21
     use_flip: true
-    use_rot: false
+    use_rot: true
     color: RGB
 
 
   val:
-    name: REDS
-    mode: video_test
-    dataroot_GT: F:\REDS\reds4-000
-    dataroot_LQ: F:\REDS\reds4-000
+    name: Vid4
+    mode: video_test_etdm
+    # dataroot_GT: F:/Vid4_GTx2
+    dataroot_GT: F:/Vid4/GT_sample
+    dataroot_LQ: F:/Vid4/GT_sample
     cache_data: True
     N_frames: 5
-    #patch_size: 56
     padding: new_info
-  
-    degradation_mode: set
-    degradation_type: bicubic
-    sigma_x: 1.6
-    sigma_y: 1.6
+    degradation_mode: preset
+    degradation_type: impulse
+    sigma_x: 0.2
+    sigma_y: 0.2
     theta: 0
 
 #### network structures
 network_G:
-  which_model_G: EDVR
-  nf: 128
-  nframes: 5
-  groups: 8
-  front_RBs: 5
-  back_RBs: 40
-  predeblur: false
-  HR_in: false
-  w_TSA: true
+  which_model_G: ETDM
+  n_c: 96
+  n_b: 18
+  spynet_pretrain: F:/DynaVSR-master/pretrained_models/ETDM/network-sintel-final.pytorch
 
 network_E:
   which_model_E: MFDN
@@ -65,50 +57,48 @@ network_E:
   nf: 64
   in_nc: 3
 
-
 #### path
 path:
-  bicubic_G: ../pretrained_models/BaselineVSR/EDVR_L_REDS_S4.pth
-  fixed_E: ../pretrained_models/MFDN/MFDN_REDS_S4.pth
-  pretrain_model_G: ../pretrained_models/EDVR/REDS_G_S4.pth
-  pretrain_model_E: ../pretrained_models/EDVR/REDS_E_S4.pth
+  bicubic_G: F:\DynaVSR-master\pretrained_models\ETDM/X4_18L_64_best.pth
+  fixed_E: ../pretrained_models/MFDN/MFDN_Vimeo_S4.pth
+  pretrain_model_G: ../pretrained_models/EDVR/Vid4_G_S4.pth
+  pretrain_model_E: ../pretrained_models/EDVR/Vid4_E_S4.pth
   strict_load: true
   resume_state: ~
   img_save_path: ../results
 
 #### training settings: learning rate scheme, loss
 train:
-  lr_C: !!float 1e-4 # Not Used
   lr_G: !!float 1e-5
   lr_scheme: MultiStepLR
   optim: Adam
   beta1: 0.9
   beta2: 0.99
   epochs: 20
-  niter: 80000
+  niter: 30000
   warmup_iter: -1  # -1: no warm up
-  lr_steps: [40000, 60000]
+  lr_steps: [20000, 25000]
   lr_gamma: 0.2
   loss_ftn: l1  # Loss function for updating KE model
-  use_real: False
+  use_real: false
 
   maml:
     use_patch: false
-    num_patch: 1
-    patch_size: 128
+    num_patch: 3
+    patch_size: 96
     optimizer: Adam
     lr_alpha: !!float 1e-5
     beta1: 0.9
     beta2: 0.99
     adapt_iter: 1
 
-  pixel_criterion: cb
+  pixel_criterion: l1
   pixel_weight: 1.0
-  val_freq: !!float 1e3
+  val_freq: !!float 500 #1e3
 
   manual_seed: 0
 
 #### logger
 logger:
   print_freq: 100
-  save_checkpoint_freq: !!float 1e3
+  save_checkpoint_freq: !!float 500 # 1e3

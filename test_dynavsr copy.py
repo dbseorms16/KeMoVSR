@@ -7,7 +7,7 @@ import imageio
 import time
 import pandas as pd
 from copy import deepcopy
-
+import cv2
 import torch
 from torch.nn import functional as F
 import torch.distributed as dist
@@ -18,7 +18,11 @@ import options.options as option
 from utils import util
 from data.meta_learner import loader, create_dataloader, create_dataset, preprocessing
 from models import create_model
+from skimage import img_as_ubyte
 
+def crop_border_RGB(target, shave_border=0):
+    target = target[:,shave_border:-shave_border, shave_border:-shave_border,:]
+    return target
 
 def init_dist(backend='nccl', **kwargs):
     """initialization for distributed training"""
@@ -118,10 +122,13 @@ def main():
     def crop(LR_seq, HR, num_patches_for_batch=4, patch_size=44):
         """
         Crop given patches.
+
         Args:
             LR_seq: (B=1) x T x C x H x W
             HR: (B=1) x C x H x W
+
             patch_size (int, optional):
+
         Return:
             B(=batch_size) x T x C x H x W
         """
@@ -176,10 +183,19 @@ def main():
         meta_test_data = {}
 
         # Make SuperLR seq using estimation model
-        meta_train_data['GT'] = val_data['LQs'][:, center_idx]
-        meta_test_data['LQs'] = val_data['LQs'][0:1]
-        meta_test_data['GT'] = val_data['GT'][0:1, center_idx] if with_GT else None
-        # Check whether the batch size of each validation data is 1
+        # meta_train_data['GT'] = val_data['LQs'][:, center_idx]
+        if opt['network_G']['which_model_G'] == 'ETDM':
+            meta_train_data['GT'] = val_data['LQs'][:, :, center_idx]
+            meta_test_data['LQs'] = val_data['LQs'][0:1]
+            
+            meta_test_data['extra_data'] = val_data['extra_data']
+            # meta_test_data['LQs'] = val_data['LQs'].permute(0,2,1,3,4)
+            meta_test_data['GT'] = val_data['ref'][0:1] 
+        else :
+            meta_train_data['GT'] = val_data['LQs'][:, center_idx]
+            meta_test_data['LQs'] = val_data['LQs'][0:1]
+            meta_test_data['GT'] = val_data['GT'][0:1, center_idx] if with_GT else None
+            # Check whether the batch size of each validation data is 1
         assert val_data['LQs'].size(0) == 1
 
         if opt['network_G']['which_model_G'] == 'TOF':
@@ -194,11 +210,38 @@ def main():
         modelcp.load_network(opt['path']['bicubic_G'], modelcp.netG)
         modelcp.feed_data(meta_test_data, need_GT=with_GT)
         modelcp.test()
-        
+
         if with_GT:
             model_start_visuals = modelcp.get_current_visuals(need_GT=True)
             hr_image = util.tensor2img(model_start_visuals['GT'], mode='rgb')
-            start_image = util.tensor2img(model_start_visuals['rlt'][center_idx], mode='rgb')
+            # print(model_start_visuals['rlt'].size())
+            # print(model_start_visuals['rlt'].size())
+            if opt['network_G']['which_model_G'] == 'ETDM':
+                hr_image = util.tensor2img(val_data['GT'][0:1, center_idx], mode='rgb')
+                prediction = model_start_visuals['rlt']
+                prediction = prediction.squeeze(0).permute(1,2,3,0) # [T,H,W,C]
+                prediction = prediction.cpu().numpy() # tensor -> numpy, rgb -> bgr 
+                start_image = crop_border_RGB(prediction, 8)[center_idx]
+            elif opt['network_G']['which_model_G'] == 'BasicVSRplus':
+                hr_image = util.tensor2img(val_data['GT'][0:1, center_idx], mode='rgb')
+                start_image = util.tensor2img(model_start_visuals['rlt'][center_idx], mode='rgb')
+
+                # start_image = start_image.permute(1,2,3,0)[:,:,:,::-1] # [T,H,W,C]
+                # print(start_image.shape)
+                # print(start_image.shape)
+                # start_image = util.tensor2img(start_image, mode='rgb')
+            else : 
+                hr_image = util.tensor2img(val_data['GT'][0:1, center_idx], mode='rgb')
+                start_image = util.tensor2img(model_start_visuals['rlt'], mode='rgb')
+            # cv2.imwrite(os.path.join(maml_train_folder, 'start_1{:08d}.png'.format(idx_d)),
+            #             start_image , [cv2.IMWRITE_PNG_COMPRESSION, 0])
+            # print(start_image.shape)
+            # print(meta_test_data['LQs'].size())
+            # print(model_start_visuals['rlt'].size())
+            imageio.imwrite(os.path.join(maml_train_folder, 'start_1{:08d}.png'.format(idx_d)), start_image)
+            # start_image = cv2.imread(os.path.join(maml_train_folder, '{:08d}.png'.format(idx_d)))
+            
+            
             psnr_rlt[0][folder].append(util.calculate_psnr(start_image, hr_image))
             ssim_rlt[0][folder].append(util.calculate_ssim(start_image, hr_image))
 
@@ -209,8 +252,6 @@ def main():
 
         optim_params = []
         for k, v in modelcp.netG.named_parameters():
-            if 'spynet' in k:
-                v.requires_grad =False
             if v.requires_grad:
                 optim_params.append(v)
         
@@ -238,6 +279,9 @@ def main():
                 est_modelcp.forward_without_optim()
                 superlr_seq = est_modelcp.fake_L
                 meta_train_data['LQs'] = superlr_seq
+                
+                # meta_train_data['LQs'] = torch.nn.functional.interpolate(meta_train_data['LQs'], scale_factor=2, mode='bilinear', align_corners=True)
+                # meta_train_data['GT'] = torch.nn.functional.interpolate(meta_train_data['GT'], scale_factor=2, mode='bilinear', align_corners=True)
             else:
                 meta_train_data['LQs'] = val_data['SuperLQs']
 
@@ -248,7 +292,17 @@ def main():
                 LQs = LQs.reshape(B*T, C, H, W)
                 Bic_LQs = F.interpolate(LQs, scale_factor=opt['scale'], mode='bicubic', align_corners=True)
                 meta_train_data['LQs'] = Bic_LQs.reshape(B, T, C, H*opt['scale'], W*opt['scale'])
-
+                
+            if opt['network_G']['which_model_G'] == 'ETDM':
+                meta_train_data['LQs'] = val_data['SuperLQs']
+                meta_train_data['GT'] = val_data['LQs'][:, center_idx]
+                meta_train_data['extra_data'] = val_data['S_extra_dataset']
+            
+            # if opt['network_G']['which_model_G'] == 'ETDM':
+            #     meta_test_data['extra_data'] = val_data['S_extra_dataset']
+            #     meta_train_data['LQs'] = val_data['SuperLQs'].permute(0,2,1,3,4)
+            #     meta_test_data['GT'] = val_data['ref'][0:1].permute(0,2,1,3,4) 
+            
             # Update both modelcp + estmodelcp jointly
             inner_optimizer.zero_grad()
             if opt['train']['maml']['use_patch']:
@@ -259,7 +313,7 @@ def main():
                 modelcp.feed_data(cropped_meta_train_data)
             else:
                 modelcp.feed_data(meta_train_data)
-
+            
             loss_train = modelcp.calculate_loss()
             
             ##################### SLR LOSS ###################
@@ -278,14 +332,38 @@ def main():
         et = time.time()
         update_time = et - st
 
+        st = time.time()
         modelcp.feed_data(meta_test_data, need_GT=with_GT)
         modelcp.test()
+        et = time.time()
+        
+        update_time = et - st
 
         model_update_visuals = modelcp.get_current_visuals(need_GT=False)
-        update_image = util.tensor2img(model_update_visuals['rlt'][center_idx], mode='rgb')
+        # update_image = util.tensor2img(model_update_visuals['rlt'][center_idx], mode='rgb')
+        if opt['network_G']['which_model_G'] == 'ETDM':
+            # print(model_update_visuals['rlt'][:, center_idx].size())
+            prediction = model_start_visuals['rlt']
+            prediction = prediction.squeeze(0).permute(1,2,3,0) # [T,H,W,C]
+            prediction = prediction.cpu().numpy() # tensor -> numpy, rgb -> bgr 
+            update_image = crop_border_RGB(prediction, 8)[center_idx] 
+            # print(update_image.shape)
+            # update_image = preprocessing.np2tensor(update_image)
+            # normalized = update_image.data.mul(255 / 255)
+            # update_image = normalized.byte().permute(1, 2, 0).cpu().numpy()
+            # # update_image = util.tensor2img(update_image, mode='rgb')
+            # print(update_image.shape)
+            
+            # print(hr_image)
+        elif opt['network_G']['which_model_G'] == 'BasicVSRplus':
+            update_image = util.tensor2img(model_update_visuals['rlt'][center_idx], mode='rgb')
+        else: 
+            update_image = util.tensor2img(model_update_visuals['rlt'], mode='rgb')
+        
         # Save and calculate final image
+        
         imageio.imwrite(os.path.join(maml_train_folder, '{:08d}.png'.format(idx_d)), update_image)
-
+        update_image = cv2.imread(os.path.join(maml_train_folder, '{:08d}.png'.format(idx_d)))
         if with_GT:
             psnr_rlt[1][folder].append(util.calculate_psnr(update_image, hr_image))
             ssim_rlt[1][folder].append(util.calculate_ssim(update_image, hr_image))
@@ -344,9 +422,9 @@ def main():
             ssim_rlt_avg[k] = sum(v) / len(v)
             ssim_total_avg += ssim_rlt_avg[k]
         ssim_total_avg /= len(ssim_rlt[0])
-        log_s = '# Validation # Bicubic SSIM: {:.4f}:'.format(ssim_total_avg)
+        log_s = '# Validation # Bicubic SSIM: {:.4e}:'.format(ssim_total_avg)
         for k, v in ssim_rlt_avg.items():
-            log_s += ' {}: {:.4f}'.format(k, v)
+            log_s += ' {}: {:.4e}'.format(k, v)
         print(log_s)
 
         ssim_rlt_avg = {}

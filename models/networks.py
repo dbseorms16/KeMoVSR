@@ -44,6 +44,10 @@ def define_G(opt, ada=False):
         import models.archs.TOF_arch as TOF_arch
         netG = TOF_arch.TOFlow(adapt_official=True)
 
+    elif which_model == 'ETDM':
+        import models.archs.ETDM_arch as ETDM_arch
+        netG = ETDM_arch.ETDM(scale=opt['scale'], n_c=opt_net['n_c'], n_b=opt_net['n_b'], 
+                              spynet_pretrain=opt['spynet_pretrain'])
 
     elif which_model == 'DUF':
         import models.archs.DUF_arch as DUF_arch

@@ -120,14 +120,16 @@ class VideoBaseModel(BaseModel):
             else:
                 optim_params = []
                 for k, v in self.netG.named_parameters():
-                    # if not 'transformer' in k:
+                    if not 'transformer' in k:
+                        v.requires_grad = False
+                    
+                    # if 'spynet' in k:
                     #     v.requires_grad = False
+                    else:
+                        logger.warning('Params [{:s}] will optimize.'.format(k))
                         
                     if v.requires_grad:
                         optim_params.append(v)
-                    else:
-                        if self.rank <= 0:
-                            logger.warning('Params [{:s}] will not optimize.'.format(k))
 
             if train_opt['optim'] == 'SGD':
                 self.optimizer_G = torch.optim.SGD(optim_params, lr=train_opt['lr_G'], weight_decay=wd_G)
@@ -159,6 +161,17 @@ class VideoBaseModel(BaseModel):
 
     def feed_data(self, data, need_GT=True):
         self.var_L = data['LQs'].to(self.device)
+        
+        if self.opt['network_G']['which_model_G'] == 'ETDM':
+            self.left_mask_HV = data['extra_data'][0].to(self.device)
+            self.left_mask_LV = data['extra_data'][1].to(self.device)
+            self.right_mask_HV = data['extra_data'][2].to(self.device)
+            self.right_mask_LV = data['extra_data'][3].to(self.device)
+        
+        if self.opt['network_G']['which_model_G'] == 'BasicVSRplus':
+            self.v_m = 0 
+            self.h_m = 0 
+            
         if need_GT:
             self.real_H = data['GT'].to(self.device)
 
@@ -171,7 +184,9 @@ class VideoBaseModel(BaseModel):
             self.set_params_lr_zero()
 
         self.optimizer_G.zero_grad()
-        self.fake_H = self.netG(self.var_L)
+        if self.opt['network_G']['which_model_G'] == 'BasicVSRplus':
+            self.fake_H = self.netG(self.var_L, self.h_m, self.v_m)
+        else: self.fake_H = self.netG(self.var_L)
         l_pix = self.l_pix_w * self.cri_pix(self.fake_H, self.real_H)
         l_pix.backward()
         self.optimizer_G.step()
@@ -191,7 +206,23 @@ class VideoBaseModel(BaseModel):
         self.log_dict['l_pix'] = loss.item()
 
     def calculate_loss(self):
-        self.fake_H = self.netG(self.var_L)
+        if self.opt['network_G']['which_model_G'] == 'ETDM':
+            self.fake_H = self.netG(self.var_L,
+                                'test',
+                                self.real_H,
+                                self.left_mask_HV,
+                                self.left_mask_LV,
+                                self.right_mask_HV,
+                                self.right_mask_LV
+                                )
+            b,c,f,w,h = self.fake_H.size()
+            fake_H = self.fake_H[:,:,f//2]
+            l_pix = self.l_pix_w * self.cri_pix(fake_H, self.real_H)
+        elif self.opt['network_G']['which_model_G'] == 'BasicVSRplus':
+            self.fake_H = self.netG(self.var_L, self.h_m, self.v_m)
+        else:
+            self.fake_H = self.netG(self.var_L)
+            
         l_pix = self.l_pix_w * self.cri_pix(self.fake_H, self.real_H)
         self.log_dict['l_pix'] = l_pix.item()
         return l_pix
@@ -199,7 +230,19 @@ class VideoBaseModel(BaseModel):
     def test(self):
         self.netG.eval()
         with torch.no_grad():
-            self.fake_H = self.netG(self.var_L)
+            if self.opt['network_G']['which_model_G'] == 'ETDM':
+                self.fake_H = self.netG(self.var_L,
+                                        'test',
+                                        self.real_H,
+                                        self.left_mask_HV,
+                                        self.left_mask_LV,
+                                        self.right_mask_HV,
+                                        self.right_mask_LV
+                                        )
+            elif self.opt['network_G']['which_model_G'] == 'BasicVSRplus':
+                self.fake_H = self.netG(self.var_L, self.h_m, self.v_m)
+                
+            else: self.fake_H = self.netG(self.var_L)
         self.netG.train()
 
     def get_current_log(self):
@@ -208,7 +251,9 @@ class VideoBaseModel(BaseModel):
     def get_current_visuals(self, need_GT=True):
         out_dict = OrderedDict()
         out_dict['LQ'] = self.var_L.detach()[0].float().cpu()
-        out_dict['rlt'] = self.fake_H.detach()[0].float().cpu()
+        if self.opt['network_G']['which_model_G'] == 'ETDM':
+            out_dict['rlt'] = self.fake_H
+        else : out_dict['rlt'] = self.fake_H.detach()[0].float().cpu()
         if need_GT:
             out_dict['GT'] = self.real_H.detach()[0].float().cpu()
         return out_dict

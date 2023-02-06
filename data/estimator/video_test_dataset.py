@@ -44,6 +44,8 @@ class VideoTestDataset(data.Dataset):
             if self.name.lower() == 'vid4':
                 img_type = 'img'
                 subfolders_GT = util.glob_file_list(self.GT_root)
+                subfolders_LQ = util.glob_file_list(self.LQ_root)
+                
             elif self.name.lower() == 'reds':
                 img_type = 'img'
                 list_hr_seq = util.glob_file_list(self.GT_root)
@@ -70,6 +72,15 @@ class VideoTestDataset(data.Dataset):
 
                 if self.cache_data:
                     self.imgs_GT[subfolder_name] = util.read_img_seq(img_paths_GT, img_type)
+                    
+            for subfolder_LQ in subfolders_LQ:
+                subfolder_name = osp.basename(subfolder_LQ)
+                img_paths_LQ = util.glob_file_list(subfolder_LQ)
+                max_idx = len(subfolder_LQ)
+
+                if self.cache_data:
+                    self.imgs_LQ[subfolder_name] = util.read_img_seq(img_paths_LQ, img_type)
+                    
         elif opt['name'].lower() in ['vimeo90k-test']:
             pass  # TODO
         else:
@@ -85,6 +96,7 @@ class VideoTestDataset(data.Dataset):
         select_idx = util.index_generation(idx, max_idx, self.opt['N_frames'],
                                            padding=self.opt['padding'])
         imgs_GT = self.imgs_GT[folder].index_select(0, torch.LongTensor(select_idx))
+        imgs_LR = self.imgs_LQ[folder].index_select(0, torch.LongTensor(select_idx))
 
         # Fix the kernel type 1.3 1.3 no noise
         '''
@@ -115,7 +127,7 @@ class VideoTestDataset(data.Dataset):
             'Kernel': kernel_gen.kernel,
             'folder': folder,
             'idx': self.data_info['idx'][index],
-            'border': border
+            'border': border,
         }
 
     def __len__(self):

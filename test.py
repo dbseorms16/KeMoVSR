@@ -111,7 +111,7 @@ def main():
     center_idx = (opt['datasets']['val']['N_frames']) // 2
     with_GT = False if opt['datasets']['val']['mode'] == 'demo' else True
 
-    pd_log = pd.DataFrame(columns=['PSNR_Bicubic', 'PSNR_Ours', 'SSIM_Bicubic', 'SSIM_Ours'])
+    pd_log = pd.DataFrame(columns=['PSNR_Bicubic', 'SSIM_Bicubic'])
 
     # Single GPU
     # PSNR_rlt: psnr_init, psnr_before, psnr_after
@@ -120,6 +120,7 @@ def main():
     ssim_rlt = [{}, {}]
 
     pbar = util.ProgressBar(len(val_set))
+    dd = 1
     for val_data in val_loader:
         folder = val_data['folder'][0]
         idx_d = int(val_data['idx'][0].split('/')[0])
@@ -170,45 +171,101 @@ def main():
         # max_sigx = 2.0
         # start_x = 0.4
         # h_coff = (max_sigx - start_x) / start_x
-        modelcp.load_network(opt['path']['pretrain_model_G'], modelcp.netG)
+        modelcp.load_modulated_network(opt['path']['bicubic_G'], modelcp.netG)
         # st = time.time()
+        orgh_ms = []
+        orgv_ms = []
+        LQs = meta_test_data['LQs']
+        B, T, C, H, W = LQs.shape
         
+        for i in range(B):
+            h_m = 0
+            v_m = 0
+            orgh_ms.append(h_m)
+            orgv_ms.append(v_m)
+        
+        meta_test_data['h_m'] = torch.tensor(orgh_ms, dtype=torch.float).cuda()
+        meta_test_data['v_m'] = torch.tensor(orgv_ms, dtype=torch.float).cuda()
         modelcp.feed_data(meta_test_data, need_GT=with_GT)
         modelcp.test()
         # et = time.time()
+        
+        # print(meta_test_data['LQs'][:, center_idx].size())
+        # Bic_LQs = F.interpolate(meta_test_data['LQs'][:, center_idx], scale_factor=opt['scale'], mode='bicubic', align_corners=True)
 
         if with_GT:
             model_start_visuals = modelcp.get_current_visuals(need_GT=True)
             hr_image = util.tensor2img(model_start_visuals['GT'], mode='rgb')
             start_image = util.tensor2img(model_start_visuals['rlt'][center_idx], mode='rgb')
-            psnr_rlt[0][folder].append(util.calculate_psnr(start_image, hr_image))
-            ssim_rlt[0][folder].append(util.calculate_ssim(start_image, hr_image))
+            # Bic_LQs = util.tensor2img(Bic_LQs[center_idx], mode='rgb')
             
-        # modelcp.netG = deepcopy(model.netG)
-
-        # Inner Loop Update
-        baseline = opt['path']['VSR_G']
-        h = opt['path']['horizontal']
-        v =  opt['path']['vertical']
+        # imageio.imwrite(os.path.join(maml_train_folder, 'start_{}.png'.format(idx_d)), start_image)
+        # imageio.imwrite(os.path.join(maml_train_folder, 'bicubic_{}.png'.format(idx_d+1)), Bic_LQs)
+        # Bic_LQs = F.interpolate(meta_test_data['LQs'][:, center_idx], scale_factor=opt['scale'], mode='bicubic', align_corners=True)
+        # Bic_LQs = util.tensor2img(Bic_LQs, mode='rgb')
         
-        modelcp_m.load_modulated_network(opt['path']['pretrain_model_G'], h, v, modelcp_m.netG, h_m=1, v_m=1)
-        # st = time.time()
+        # LQs = meta_test_data['LQs'][:, center_idx]
+        # LQs = util.tensor2img(LQs, mode='rgb')
+        
+        # samplingresults = util.tensor2img(val_data['test_LR'][:, center_idx], mode='rgb')
+        # imageio.imwrite(os.path.join(maml_train_folder, 'samplingresults_{}.png'.format(idx_d)), samplingresults)
+        # imageio.imwrite(os.path.join(maml_train_folder, 'LR_{}.png'.format(idx_d)), LQs)
+        # modelcp.netG = deepcopy(model.netG)
+        
+        psnr_rlt[0][folder].append(util.calculate_psnr(start_image, hr_image))
+        ssim_rlt[0][folder].append(util.calculate_ssim(start_image, hr_image))
+
+        modelcp_m.load_modulated_network(opt['path']['bicubic_G'], modelcp_m.netG)
+
+        thetas = val_data['kernelparam']['theta']
+        sigxs =  val_data['kernelparam']['sigma'][0]
+        sigys =  val_data['kernelparam']['sigma'][1]
+        val_h_ms = []
+        val_v_ms = []
+        LQs = val_data['LQs']
+        B, T, C, H, W = LQs.shape
+        
+        for i in range(B):
+            theta = thetas[i]
+            sigx = sigxs[i]
+            sigy = sigys[i]
+        
+            if abs(theta) > 0 and abs(sigx - sigy) > 0.2:
+                sigx *= 0.7
+                sigy *= 0.7
+                
+            h_m = sigx * 0.55
+            v_m = sigy * 0.55
+            
+            if sigx < 0.6:
+                h_m = 0.1
+            if sigy < 0.6:
+                v_m = 0.1
+                
+            val_h_ms.append(h_m)
+            val_v_ms.append(v_m)
+        meta_test_data['h_m'] = torch.tensor(val_h_ms, dtype=torch.float).cuda()
+        meta_test_data['v_m'] = torch.tensor(val_v_ms, dtype=torch.float).cuda()     
+
         st = time.time()
         
-        modelcp_m.feed_data(meta_test_data, need_GT=with_GT)
-        modelcp_m.test()
+        # modelcp_m.feed_data(meta_test_data, need_GT=with_GT)
+        # modelcp_m.test()
         et = time.time()
         update_time = et - st
         
-        if with_GT:
-            modulated_image = modelcp_m.get_current_visuals(need_GT=True)
-            hr_image = util.tensor2img(modulated_image['GT'], mode='rgb')
-            modulated_image = modulated_image['rlt'][center_idx]
-            update_image = util.tensor2img(modulated_image, mode='rgb')
-            psnr_rlt[1][folder].append(util.calculate_psnr(update_image, hr_image))
-            ssim_rlt[1][folder].append(util.calculate_ssim(update_image, hr_image))
+        # if with_GT:
+        #     modulated_image = modelcp_m.get_current_visuals(need_GT=True)
+        #     hr_image = util.tensor2img(modulated_image['GT'], mode='rgb')
+        #     modulated_image = modulated_image['rlt'][center_idx]
+        #     update_image = util.tensor2img(modulated_image, mode='rgb')
+        #     # print(six, siy, the)
+        #     # print(sigx[0].item(), sigy[0].item(), theta[0].item(), float(util.calculate_psnr(update_image, hr_image)-util.calculate_psnr(start_image, hr_image)))
+        #     # print(h_m, v_m)
+        #     psnr_rlt[1][folder].append(util.calculate_psnr(update_image, hr_image))
+        #     ssim_rlt[1][folder].append(util.calculate_ssim(update_image, hr_image))
             
-        imageio.imwrite(os.path.join(maml_train_folder, '{:08d}.png'.format(idx_d)), update_image)
+        # imageio.imwrite(os.path.join(maml_train_folder, '{:08d}.png'.format(idx_d)), update_image)
         
         # Bic_LQs = util.tensor2img(Bic_LQs, mode='rgb')
         # bic_lq = util.tensor2img(bic_lq, mode='rgb')
@@ -237,22 +294,27 @@ def main():
             name_df = '{}/{:08d}'.format(folder, idx_d)
             if name_df in pd_log.index:
                 pd_log.at[name_df, 'PSNR_Bicubic'] = psnr_rlt[0][folder][-1]
-                pd_log.at[name_df, 'PSNR_Ours'] = psnr_rlt[1][folder][-1]
+                # pd_log.at[name_df, 'PSNR_Ours'] = psnr_rlt[1][folder][-1]
                 pd_log.at[name_df, 'SSIM_Bicubic'] = ssim_rlt[0][folder][-1]
-                pd_log.at[name_df, 'SSIM_Ours'] = ssim_rlt[1][folder][-1]
+                # pd_log.at[name_df, 'SSIM_Ours'] = ssim_rlt[1][folder][-1]
             else:
                 pd_log.loc[name_df] = [psnr_rlt[0][folder][-1],
-                                    psnr_rlt[1][folder][-1],
-                                    ssim_rlt[0][folder][-1], ssim_rlt[1][folder][-1]]
+                                    # psnr_rlt[1][folder][-1],
+                                    ssim_rlt[0][folder][-1]]
 
             pd_log.to_csv(os.path.join('../test_results', folder_name, 'psnr_update.csv'))
 
-            pbar.update('Test {} - {}: I: {:.3f}/{:.4f} \tF+: {:.3f}/{:.4f} \tTime: {:.3f}s'
-                            .format(folder, idx_d,
-                                    psnr_rlt[0][folder][-1], ssim_rlt[0][folder][-1],
-                                    psnr_rlt[1][folder][-1], ssim_rlt[1][folder][-1],
-                                    update_time
-                                    ))
+            # pbar.update('Test {} - {}: I: {:.3f}/{:.4f} \tF+: {:.3f}/{:.4f} \tTime: {:.3f}s'
+            #                 .format(folder, idx_d,
+            #                         psnr_rlt[0][folder][-1], ssim_rlt[0][folder][-1],
+            #                         psnr_rlt[1][folder][-1], ssim_rlt[1][folder][-1],
+            #                         update_time
+            #                         ))
+            pbar.update('Test {} - {}: I: {:.3f}/{:.4f} \tTime: {:.3f}s'
+                .format(folder, idx_d,
+                        psnr_rlt[0][folder][-1], ssim_rlt[0][folder][-1],
+                        update_time
+                        ))
         else:
             pbar.update()
 
@@ -269,17 +331,17 @@ def main():
             log_s += ' {}: {:.4f}'.format(k, v)
         print(log_s)
 
-        psnr_rlt_avg = {}
-        psnr_total_avg = 0.
-        # Just calculate the final value of psnr_rlt(i.e. psnr_rlt[2])
-        for k, v in psnr_rlt[1].items():
-            psnr_rlt_avg[k] = sum(v) / len(v)
-            psnr_total_avg += psnr_rlt_avg[k]
-        psnr_total_avg /= len(psnr_rlt[1])
-        log_s = '# Validation # PSNR: {:.4f}:'.format(psnr_total_avg)
-        for k, v in psnr_rlt_avg.items():
-            log_s += ' {}: {:.4f}'.format(k, v)
-        print(log_s)
+        # psnr_rlt_avg = {}
+        # psnr_total_avg = 0.
+        # # Just calculate the final value of psnr_rlt(i.e. psnr_rlt[2])
+        # for k, v in psnr_rlt[1].items():
+        #     psnr_rlt_avg[k] = sum(v) / len(v)
+        #     psnr_total_avg += psnr_rlt_avg[k]
+        # psnr_total_avg /= len(psnr_rlt[1])
+        # log_s = '# Validation # PSNR: {:.4f}:'.format(psnr_total_avg)
+        # for k, v in psnr_rlt_avg.items():
+        #     log_s += ' {}: {:.4f}'.format(k, v)
+        # print(log_s)
 
         ssim_rlt_avg = {}
         ssim_total_avg = 0.
@@ -293,17 +355,17 @@ def main():
             log_s += ' {}: {:.4e}'.format(k, v)
         print(log_s)
 
-        ssim_rlt_avg = {}
-        ssim_total_avg = 0.
-        # Just calculate the final value of ssim_rlt(i.e. ssim_rlt[1])
-        for k, v in ssim_rlt[1].items():
-            ssim_rlt_avg[k] = sum(v) / len(v)
-            ssim_total_avg += ssim_rlt_avg[k]
-        ssim_total_avg /= len(ssim_rlt[1])
-        log_s = '# Validation # SSIM: {:.4e}:'.format(ssim_total_avg)
-        for k, v in ssim_rlt_avg.items():
-            log_s += ' {}: {:.4e}'.format(k, v)
-        print(log_s)
+        # ssim_rlt_avg = {}
+        # ssim_total_avg = 0.
+        # # Just calculate the final value of ssim_rlt(i.e. ssim_rlt[1])
+        # for k, v in ssim_rlt[1].items():
+        #     ssim_rlt_avg[k] = sum(v) / len(v)
+        #     ssim_total_avg += ssim_rlt_avg[k]
+        # ssim_total_avg /= len(ssim_rlt[1])
+        # log_s = '# Validation # SSIM: {:.4e}:'.format(ssim_total_avg)
+        # for k, v in ssim_rlt_avg.items():
+        #     log_s += ' {}: {:.4e}'.format(k, v)
+        # print(log_s)
 
     print('End of evaluation.')
 

@@ -40,6 +40,7 @@ class Vimeo(data.Dataset):
         gen_kwargs = preprocessing.set_kernel_params(sigma_x=sigma_x, sigma_y=sigma_y, theta=theta)
         self.kernel_gen = rkg.Degradation(self.opt['datasets']['train']['kernel_size'], self.scale, **gen_kwargs)
         self.gen_kwargs_l = [gen_kwargs['sigma'][0], gen_kwargs['sigma'][1], gen_kwargs['theta']]
+        self.kernelparam = {'theta': gen_kwargs['theta'], 'sigma': [gen_kwargs['sigma'][0], gen_kwargs['sigma'][1]]}
 
 
     def __getitem__(self, idx):
@@ -75,18 +76,24 @@ class Vimeo(data.Dataset):
         kernel_temp.set_kernel_directly(kernel_set[2])
         seq_superlr = kernel_temp.apply(seq_lr)
         '''
+        # gen_kwargs = preprocessing.set_kernel_params()
+        # self.kernel_gen = rkg.Degradation(self.opt['datasets']['train']['kernel_size'], self.scale, **gen_kwargs)
+        # self.gen_kwargs_l = [gen_kwargs['sigma'][0], gen_kwargs['sigma'][1], gen_kwargs['theta']]
+        # kernelparam = {'theta': gen_kwargs['theta'], 'sigma': [gen_kwargs['sigma'][0], gen_kwargs['sigma'][1]]}
+
+
+        if self.train:
+            seq_hr  = preprocessing.crop_fix(seq_hr, patch_size=self.opt['datasets']['train']['patch_size'])
+            seq_hr  = preprocessing.augment(seq_hr )
         
         seq_lr, _ = self.kernel_gen.apply(seq_hr)
         seq_lr = seq_lr.mul(255).clamp(0, 255).round().div(255)
         # seq_superlr, _ = self.kernel_gen.apply(seq_lr)
 
-        if self.train:
-            seq_hr, seq_lr  = preprocessing.crop(seq_hr, seq_lr,  patch_size=self.opt['datasets']['train']['patch_size'])
-            seq_hr, seq_lr  = preprocessing.augment(seq_hr, seq_lr )
-
         return {
                 'LQs': seq_lr,
                 'GT': seq_hr,
+                'kernelparam' : self.kernelparam
                 # 'Kernel': kernel_gen.kernel
                 }
 

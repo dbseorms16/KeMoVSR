@@ -6,10 +6,8 @@ import numpy as np
 import math
 from data import random_kernel_generator as rkg
 from data.meta_learner import preprocessing
-import pickle
-import imageio
 import cv2
-from torch.nn import functional as F
+
 class VideoTestDataset(data.Dataset):
     """
     A video test dataset. Support:
@@ -46,7 +44,6 @@ class VideoTestDataset(data.Dataset):
             if self.name.lower() == 'vid4':
                 img_type = 'img'
                 subfolders_GT = util.glob_file_list(self.GT_root)
-                # subfolders_LQ = util.glob_file_list(self.LQ_root)
             elif self.name.lower() == 'reds':
                 img_type = 'img'
                 list_hr_seq = util.glob_file_list(self.GT_root)
@@ -73,15 +70,6 @@ class VideoTestDataset(data.Dataset):
 
                 if self.cache_data:
                     self.imgs_GT[subfolder_name] = util.read_img_seq(img_paths_GT, img_type)
-            
-            # for subfolder_LQ in subfolders_LQ:
-            #     subfolder_name = osp.basename(subfolder_LQ)
-            #     img_paths_LQ = util.glob_file_list(subfolder_LQ)
-            #     max_idx = len(subfolder_LQ)
-
-            #     if self.cache_data:
-            #         self.imgs_LQ[subfolder_name] = util.read_img_seq(img_paths_LQ, img_type)
-                    
         elif opt['name'].lower() in ['vimeo90k-test']:
             pass  # TODO
         else:
@@ -89,29 +77,21 @@ class VideoTestDataset(data.Dataset):
                 'Not support video test dataset. Support Vid4, REDS4 and Vimeo90k-Test.')
 
                 # Generate kernel
-        
+
         if opt['degradation_mode'] == 'set':
             sigma_x = float(opt['sigma_x'])
             sigma_y = float(opt['sigma_y'])
             theta = float(opt['theta'])
-            
-            self.sigx = sigma_x
-            self.sigy = sigma_y
-            self.theta = theta
             gen_kwargs = preprocessing.set_kernel_params(sigma_x=sigma_x, sigma_y=sigma_y, theta=theta)
             self.kernel_gen = rkg.Degradation(self.kernel_size, self.scale, **gen_kwargs)
             self.gen_kwargs_l = [gen_kwargs['sigma'][0], gen_kwargs['sigma'][1], gen_kwargs['theta']]
 
         elif opt['degradation_mode'] == 'preset':
-            self.kernel_gen = rkg.Degradation(self.kernel_size, 2)
+            self.kernel_gen = rkg.Degradation(self.kernel_size, self.scale)
             if self.name.lower() == 'vid4':
                 self.kernel_dict = np.load('F:/DynaVSR-master/pretrained_models/Vid4Gauss.npy')
-                with open(file='F:/DynaVSR-master/vid4.pickle', mode='rb') as f:
-                    self.kernel_params=pickle.load(f)
             elif self.name.lower() == 'reds':
                 self.kernel_dict = np.load('F:/DynaVSR-master/pretrained_models/REDSGauss.npy')
-                with open(file='F:/DynaVSR-master/reds4.pickle', mode='rb') as f:
-                    self.kernel_params=pickle.load(f)
             else:
                 raise NotImplementedError()
 
@@ -123,62 +103,135 @@ class VideoTestDataset(data.Dataset):
 
         select_idx = util.index_generation(idx, max_idx, self.opt['N_frames'],
                                            padding=self.opt['padding'])
-        imgs_GT = self.imgs_GT[folder].index_select(0, torch.LongTensor(select_idx))
+        imgs_GT_org = self.imgs_GT[folder].index_select(0, torch.LongTensor(select_idx))
+        imgs_GT = imgs_GT_org.permute(0,2,3,1)
         
-        # test_LR = self.imgs_LQ[folder].index_select(0, torch.LongTensor(select_idx))
-        # # test_LR, kernel = self.kernel_gen.apply(test_LR)
-        # # test_LR = test_LR.mul(255).clamp(0, 255).round().div(255)
-        # # kernelparam = {'theta': self.theta, 'sigma': [self.sigx, self.sigy]}
-        # test_LR = F.interpolate(test_LR, scale_factor=0.5,
-        #         mode='bicubic')
-                    
+        imgs_GT = np.lib.pad(imgs_GT, pad_width=((0,0), (2*self.scale,2*self.scale), (2*self.scale,2*self.scale), (0,0)), mode='reflect')
+        imgs_GT = preprocessing.np2tensor(imgs_GT)
+        imgs_GT = imgs_GT.permute(2,0,3,1)
+        
+        # imgs_GT = torch.nn.functional.interpolate(imgs_GT, scale_factor=2, mode='bilinear',
+        #                                 align_corners=True)
+
         if self.opt['degradation_mode'] == 'set':
             '''
             for i in range(imgs_GT.shape[0]):
                 imgs_LR_slice = self.kernel_gen.apply(imgs_GT[i])
                 imgs_LR.append(imgs_LR_slice)
+                imgs_SuperLR.append(self.kernel_gen.apply(imgs_LR_slice))
 
             imgs_LR = torch.stack(imgs_LR, dim=0)
+            imgs_SuperLR = torch.stack(imgs_SuperLR, dim=0)
             '''
-            
-            imgs_LR, kernel = self.kernel_gen.apply(imgs_GT)
+            imgs_LR, _ = self.kernel_gen.apply(imgs_GT)
             imgs_LR = imgs_LR.mul(255).clamp(0, 255).round().div(255)
-            kernelparam = {'theta': self.theta, 'sigma': [self.sigx, self.sigy]}
-            
+            imgs_SuperLR, _ = self.kernel_gen.apply(imgs_LR)
 
         elif self.opt['degradation_mode'] == 'preset':
             my_kernel = self.kernel_dict[index]
             self.kernel_gen.set_kernel_directly(my_kernel)
-            imgs_LR, kernel = self.kernel_gen.apply(imgs_GT)
+            imgs_LR, _ = self.kernel_gen.apply(imgs_GT)
             imgs_LR = imgs_LR.mul(255).clamp(0, 255).round().div(255)
-            # imgs_LR, _ = self.kernel_gen.apply(imgs_LR)
-            sigx = self.kernel_params['sigma_x'][index]
-            sigy = self.kernel_params['sigma_y'][index]
-            theta = self.kernel_params['theta'][index]
-            kernelparam = {'theta': theta, 'sigma': [sigx, sigy]}
+            imgs_SuperLR, _ = self.kernel_gen.apply(imgs_LR)
+            
+
         else:
             kwargs = preprocessing.set_kernel_params()
             kernel_gen = rkg.Degradation(self.kernel_size, self.scale, **kwargs)
-            kernelparam = {'theta': self.theta, 'sigma': [self.sigx, self.sigy]}
-            
             '''
             for i in range(imgs_GT.shape[0]):
                 kernel_gen.gen_new_noise()
                 imgs_LR_slice = kernel_gen.apply(imgs_GT[i])
                 imgs_LR.append(imgs_LR_slice)
+                imgs_SuperLR.append(kernel_gen.apply(imgs_LR_slice))
             imgs_LR = torch.stack(imgs_LR, dim=0)
+            imgs_SuperLR = torch.stack(imgs_SuperLR, dim=0)
             '''
             imgs_LR = kernel_gen.apply(imgs_GT)
+            imgs_SuperLR = kernel_gen.apply(imgs_LR)
             
+        # T,H,W,C = target.shape
+        # if self.scale == 4:
+        #     target = np.lib.pad(target, pad_width=((0,0), (2*self.scale,2*self.scale), (2*self.scale,2*self.scale), (0,0)), mode='reflect')
+        # t = target.shape[0]
+        # h = target.shape[1]
+        # w = target.shape[2]
+        # c = target.shape[3]
+        # target = target.transpose(1,2,3,0).reshape(h,w,-1) # numpy, [H',W',CT']
+        # if self.transform:
+        #     target = self.transform(target) # Tensor, [CT',H',W']
+        # target = target.view(c,t,h,w)
+        # LR = DUF_downsample(target, self.scale) # [c,t,h,w]
+        # LR = torch.cat((LR[:,1:2,:,:], LR, LR[:,-2:-1,:,:]), dim=1)
+        # GT = torch.cat((target[:,1:2,:,:], target, target[:,-2:-1,:,:]), dim=1)
+        extra_dataset = make_etdm_dataset(imgs_LR)
+        S_extra_dataset = make_etdm_dataset(imgs_SuperLR)
+        
         return {
+            'SuperLQs': imgs_SuperLR,
+            'extra_data': extra_dataset,
+            'S_extra_dataset': S_extra_dataset,
             'LQs': imgs_LR,
-            'kernel' : kernel,
-            'GT': imgs_GT,
+            'GT': imgs_GT_org,
+            'ref': imgs_GT,
             'folder': folder,
             'idx': self.data_info['idx'][index],
-            'border': border,
-            'kernelparam' : kernelparam
+            'border': border
         }
 
     def __len__(self):
         return len(self.data_info['path_GT'])
+
+
+def make_etdm_dataset(imgs_LR):
+    LR = imgs_LR
+    T,C,H,W = LR.shape
+    ref = LR.permute(0,2,3,1).numpy() #T,H,W,3
+    LR_Y = [cv2.cvtColor(ref[i,:,:,:], cv2.COLOR_RGB2YCR_CB)[:,:,:1] for i in range(T)]
+    tensor_left_HV = []
+    tensor_left_LV = []
+    tensor_right_HV = []
+    tensor_right_LV = []
+    for i in range(T-2):
+        left = LR_Y[i]
+        middel = LR_Y[i+1]
+        right = LR_Y[i+2]
+        left_diff = abs(middel - left)
+        eps_left = left_diff.mean()
+        mask_left_HV = (left_diff > eps_left) * 1.0
+
+        mask_left_LV = 1 - mask_left_HV
+        tensor_left_HV.append(mask_left_HV)
+        tensor_left_LV.append(mask_left_LV)
+
+        right_diff = abs(middel - right)
+        eps_right = right_diff.mean()
+        mask_right_HV = (right_diff > eps_right) * 1.0
+
+        mask_right_LV = 1 - mask_right_HV
+        tensor_right_HV.append(mask_right_HV)
+        tensor_right_LV.append(mask_right_LV)
+
+    tensor_left_HV = np.asarray(tensor_left_HV).astype(np.float32)
+    tensor_left_LV = np.asarray(tensor_left_LV).astype(np.float32)
+    tensor_right_HV = np.asarray(tensor_right_HV).astype(np.float32)
+    tensor_right_LV = np.asarray(tensor_right_LV).astype(np.float32)
+
+    T,H,W,C = tensor_right_HV.shape
+
+    tensor_left_HV = tensor_left_HV.transpose(1,2,3,0).reshape(H, W, -1) # numpy, [H',W',CT]
+    tensor_left_LV = tensor_left_LV.transpose(1,2,3,0).reshape(H, W, -1) # numpy, [H',W',CT]
+    tensor_right_HV = tensor_right_HV.transpose(1,2,3,0).reshape(H, W, -1) # numpy, [H',W',CT]
+    tensor_right_LV = tensor_right_LV.transpose(1,2,3,0).reshape(H, W, -1) # numpy, [H',W',CT]
+
+    tensor_left_HV = preprocessing.np2tensor(tensor_left_HV)
+    tensor_left_LV = preprocessing.np2tensor(tensor_left_LV)
+    tensor_right_HV = preprocessing.np2tensor(tensor_right_HV)
+    tensor_right_LV = preprocessing.np2tensor(tensor_right_LV)
+
+    tensor_left_HV = tensor_left_HV.view(C,T,H,W) # Tensor, [C,T,H,W]
+    tensor_left_LV = tensor_left_LV.view(C,T,H,W) # Tensor, [C,T,H,W]
+    tensor_right_HV = tensor_right_HV.view(C,T,H,W) # Tensor, [C,T,H,W]
+    tensor_right_LV = tensor_right_LV.view(C,T,H,W) # Tensor, [C,T,H,W]
+    
+    return tensor_left_HV, tensor_left_LV, tensor_right_HV, tensor_right_LV

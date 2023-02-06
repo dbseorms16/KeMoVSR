@@ -1,5 +1,5 @@
 #### general settings
-name: V_V4_TOF_MFDN
+name: TOF_test
 use_tb_logger: false
 model: video_base+lrimgestimator
 distortion: sr
@@ -11,7 +11,7 @@ gpu_ids: [0]
 datasets:
   train:
     name: Vimeo
-    mode: LQGT
+    mode: video_test
     interval_list: [1]
     random_reverse: false
     border_mode: false7
@@ -19,6 +19,7 @@ datasets:
     cache_data: True
     padding: new_info
     img_type: img
+
     N_frames: 7
     use_shuffle: true
     n_workers: 3  # per GPU
@@ -34,14 +35,15 @@ datasets:
     mode: video_test
     # dataroot_GT: F:/Vid4_GTx2
     dataroot_GT: F:/Vid4/GT
-    dataroot_LQ: F:/Vid4_2004
+    dataroot_LQ: F:/Vid4/GT
     cache_data: True
     N_frames: 7
     padding: new_info
-    degradation_mode: set
+
+    degradation_mode: preset
     degradation_type: impulse
-    sigma_x: 0.2
-    sigma_y: 0.2
+    sigma_x: 2.0
+    sigma_y: 2.0
     theta: 0
 
 #### network structures
@@ -99,3 +101,4 @@ train:
 logger:
   print_freq: 100
   save_checkpoint_freq: !!float 500 # 1e3
+

@@ -4,7 +4,10 @@ from collections import OrderedDict
 new_dict = OrderedDict()
 
 # load_net_1 = torch.load('C:/Users/user/Desktop/HAZE/experiment/eth_training_1/model/model_best.pt')
-load_net_1 = torch.load('F:\DynaVSR-master\pretrained_models\BasicVSR/vimeo_0404_baseline.pth')
+# load_net_1 = torch.load('F:\DynaVSR-master\pretrained_models\BasicVSR/vimeo_0404_baseline.pth')
+load_net_1 = torch.load('F:\DynaVSR-master\pretrained_models\BasicVSR/reds_0404_baseline.pth')
+load_net_2 = torch.load('F:\DynaVSR-master\pretrained_models\BasicVSR/vimeo_0404_baseline.pth')
+
 # load_net_2 = torch.load('C:/Users/user/Desktop/HAZE/experiment/eth_training_1/model/SR_model_best.pt')
 
 # load_net_2 = torch.load('F:\KAWM\pretrained\HAN/HAN0240_new.pth')
@@ -16,10 +19,13 @@ load_net_1 = torch.load('F:\DynaVSR-master\pretrained_models\BasicVSR/vimeo_0404
 # print('---')
 # print(load_net_2['h2a2sr.R2.body.3.conv_du.2.weight'][0])
 # # print(load_net_1['body.1.body.10.kawm.transformer.weight'])
-for k, v in load_net_1['state_dict'].items():
-    print(k)
-    new_dict[k] = v
+# for k, v in load_net_1['state_dict'].items():
+#     print(k)
+#     if 'spynet' in k:
+#         new_dict[k] = v
 # for k, v in load_net_2.items():
+#     if 'spynet' in k:
+#         continue
 #     new_dict[k] = v
 
 # # # print(new_dict['body.1.body.10.kawm.transformer.weight'])

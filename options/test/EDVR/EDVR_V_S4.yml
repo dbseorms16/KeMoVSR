@@ -33,15 +33,15 @@ datasets:
 
   val:
     name: Vid4
-    mode: benchmark
-    dataroot_GT: F:/Vid4/GT
-    dataroot_LQ: F:/Vid4/EDVR
+    mode: video_test
+    dataroot_GT: F:/Vid4/GT_sample
+    dataroot_LQ: F:/Vid4/GT_sample
     cache_data: True
-    N_frames: 7
+    N_frames: 5
     #patch_size: 56
     padding: new_info
   
-    degradation_mode: set
+    degradation_mode: preset
     degradation_type: bicubic
     sigma_x: 1.6
     sigma_y: 1.6
@@ -52,7 +52,7 @@ datasets:
 network_G:
   which_model_G: EDVR
   nf: 128
-  nframes: 7
+  nframes: 5
   groups: 8
   front_RBs: 5
   back_RBs: 40

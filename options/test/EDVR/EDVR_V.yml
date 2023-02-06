@@ -1,5 +1,5 @@
 #### general settings
-name: V_V4_EDVR_MFDN
+name: EDVR_V
 use_tb_logger: false
 model: video_base+lrimgestimator
 distortion: sr
@@ -43,8 +43,8 @@ datasets:
 
     degradation_mode: preset
     degradation_type: impulse
-    sigma_x: 0.2
-    sigma_y: 0.2
+    sigma_x: 2.0
+    sigma_y: 2.0
     theta: 0
 
 #### network structures
@@ -86,7 +86,7 @@ train:
   epochs: 20
   niter: 30000
   warmup_iter: -1  # -1: no warm up
-  lr_steps: [10000, 20000]
+  lr_steps: [200000, 500000]
   lr_gamma: 0.2
   loss_ftn: l1  # Loss function for updating KE model
   use_real: false

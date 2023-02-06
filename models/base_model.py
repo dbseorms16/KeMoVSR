@@ -93,7 +93,9 @@ class BaseModel():
             
         for k, v in load_net.items():
             if k.startswith('module.'):
-                k[7:] = k
+                # print(k)
+                
+                k = k[7:]
                 
             if k.startswith('generator.'):
                 k = k[10:]
@@ -119,34 +121,38 @@ class BaseModel():
             
         return newdict
     
-    def load_modulated_network(self, baseline, horizontal, vertical, network, h_m=0.5, v_m=0.5, strict=True):
+    def load_modulated_network(self, baseline, network, strict=True):
         if isinstance(network, nn.DataParallel) or isinstance(network, DistributedDataParallel):
             network = network.module
-            
+        
+        load_net = torch.load(baseline)
         load_net_clean = OrderedDict()  # remove unnecessary 'module.'
         
-        weight_baseline = torch.load(baseline)['state_dict']
-        weight_baseline = self.prepocessing_weight(weight_baseline)
-        
-        state_dict_31 = torch.load(horizontal)['state_dict']
-        state_dict_31 = self.prepocessing_weight(state_dict_31)
-        
-        state_dict_13 = torch.load(vertical)['state_dict']
-        state_dict_13 = self.prepocessing_weight(state_dict_13)
-        
-        count = 0
-        
-        new_dict = OrderedDict()
-        for k, v in network.state_dict().items():
-
-            if "adafm1_2" in k  or "adafm2_2" in k:
-                new_dict[k] = state_dict_13[k]
-            elif "adafm1." in k  or "adafm2." in k:
-                new_dict[k] = state_dict_31[k]
-            else:
-                new_dict[k] = weight_baseline[k]
+        # for k, v in load_net.items():
+        if 'state_dict' in load_net.keys():
+            load_net = load_net['state_dict'] 
+            
+        for k, v in load_net.items():
+            if k.startswith('module.'):
+                # print(k)
                 
-        network.load_state_dict(new_dict, strict=strict)
+                k = k[7:]
+                
+            if k.startswith('generator.'):
+                k = k[10:]
+            
+            if k == 'step_counter':
+                continue
+            
+            if 'transformer_x' in k:
+                load_net_clean[k] = v 
+                
+            elif 'transformer_y' in k:
+                load_net_clean[k] = v 
+            else:
+                load_net_clean[k] = v
+                   
+        network.load_state_dict(load_net_clean, strict=False)
 
     def save_training_state(self, epoch, iter_step, model_type=None):
         """Save training state during training, which will be used for resuming"""

@@ -48,7 +48,7 @@ class redsdataset(data.Dataset):
         self.data_type = opt_d['img_type']
         self.LR_input = False  # low resolution inputs
         #### directly load image keys
-        if self.data_type == 'lmdb':
+        if self.data_type == 'img':
             self.paths_GT, _ = util.get_image_paths(self.data_type, opt_d['dataroot_GT'])
             logger.info('Using lmdb meta info for cache keys.')
         elif opt_d['cache_keys']:
@@ -78,7 +78,8 @@ class redsdataset(data.Dataset):
         theta = float(opt['theta'])
         gen_kwargs = preprocessing.set_kernel_params(sigma_x=sigma_x, sigma_y=sigma_y, theta=theta)
         self.kernel_gen = rkg.Degradation(self.opt['datasets']['train']['kernel_size'], self.opt['scale'], **gen_kwargs)
-        self.gen_kwargs_l = [gen_kwargs['sigma'][0], gen_kwargs['sigma'][1], gen_kwargs['theta']]
+        # self.gen_kwargs_l = [gen_kwargs['sigma'][0], gen_kwargs['sigma'][1], gen_kwargs['theta']]
+        self.kernelparam = {'theta': gen_kwargs['theta'], 'sigma': [gen_kwargs['sigma'][0], gen_kwargs['sigma'][1]]}
 
 
     def _init_lmdb(self):
@@ -119,10 +120,12 @@ class redsdataset(data.Dataset):
         elif self.data_type == 'lmdb' and (self.GT_env is None or self.LQ_env is None):
             self._init_lmdb()
 
-        scale = self.opt['scale']
+        self.scale = self.opt['scale']
         GT_size = self.opt['GT_size']
         key = self.paths_GT[index]
+
         _, name_a, name_b = key.split('\\')
+        name_b = name_b.split('.')[0]
         center_frame_idx = int(name_b)
 
         #### determine the neighbor frames
@@ -148,7 +151,7 @@ class redsdataset(data.Dataset):
         # if self.data_type == 'lmdb':
         #     img_GT = util.read_img(self.GT_env, key, (3, 720, 1280))
         # else:
-        #     img_GT = util.read_img(None, osp.join(self.GT_root, name_a, name_b + '.png'))
+        img_GT = util.read_img(None, osp.join(self.GT_root, name_a, name_b + '.png'))
 
         #         #### get the GT image (as the center frame)
         # if self.data_type == 'mc':
@@ -162,22 +165,24 @@ class redsdataset(data.Dataset):
         
         img_GTs = []
         for v in neighbor_list:
-            # print('key',key,' name_a',name_a,' v',v)
-            if self.data_type == 'lmdb':
-                img_GT = util.read_img(self.GT_env, 'REDS_train_sharp\{}\{:08d}'.format(name_a, v), (3, 720, 1280))
+            img_GT = util.read_img(None, osp.join(self.GT_root, name_a, name_b + '.png'))
             img_GTs.append(img_GT)
             
         img_GTs = np.stack(img_GTs, axis=-1)
         
-        
+        # gen_kwargs = preprocessing.set_kernel_params()
+        # self.kernel_gen = rkg.Degradation(self.opt['datasets']['train']['kernel_size'], self.opt['scale'], **gen_kwargs)
+        # self.gen_kwargs_l = [gen_kwargs['sigma'][0], gen_kwargs['sigma'][1], gen_kwargs['theta']]
+
         img_GTs = preprocessing.np2tensor(img_GTs)
+
+        if self.train:
+            img_GTs = preprocessing.crop_fix(img_GTs, scale = self.scale , patch_size=self.opt_d['patch_size'])
+            img_GTs = preprocessing.augment(img_GTs)
+
         img_LQs, _ = self.kernel_gen.apply(img_GTs)
         img_LQs = img_LQs.mul(255).clamp(0, 255).round().div(255)
         # seq_superlr, _ = self.kernel_gen.apply(seq_lr)
-
-        if self.train:
-            img_GTs, img_LQs, = preprocessing.crop(img_GTs, img_LQs, patch_size=self.opt_d['patch_size'])
-            img_GTs, img_LQs = preprocessing.augment(img_GTs, img_LQs)
 
         # #### get LQ images
         # LQ_size_tuple = (3, 180, 320) if self.LR_input else (3, 720, 1280)
@@ -226,7 +231,7 @@ class redsdataset(data.Dataset):
         # img_GT = torch.from_numpy(np.ascontiguousarray(np.transpose(img_GT, (2, 0, 1)))).float()
         # img_LQs = torch.from_numpy(np.ascontiguousarray(np.transpose(img_LQs,
         #                                                              (0, 3, 1, 2)))).float()
-        return {'LQs': img_LQs, 'GT': img_GTs, 'key': key}
+        return {'LQs': img_LQs, 'GT': img_GTs, 'key': key, 'kernelparam': self.kernelparam}
 
     def __len__(self):
         return len(self.paths_GT)

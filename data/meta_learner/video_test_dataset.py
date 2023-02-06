@@ -14,7 +14,6 @@ class VideoTestDataset(data.Dataset):
     Vid4
     REDS4
     Vimeo90K-Test
-
     no need to prepare LMDB files
     """
 
@@ -89,9 +88,9 @@ class VideoTestDataset(data.Dataset):
         elif opt['degradation_mode'] == 'preset':
             self.kernel_gen = rkg.Degradation(self.kernel_size, self.scale)
             if self.name.lower() == 'vid4':
-                self.kernel_dict = np.load('F:/DynaVSR-master/pretrained_models/Vid4Gauss.npy')
+                self.kernel_dict = np.load('../pretrained_models/Vid4Gauss.npy')
             elif self.name.lower() == 'reds':
-                self.kernel_dict = np.load('F:/DynaVSR-master/pretrained_models/REDSGauss.npy')
+                self.kernel_dict = np.load('../pretrained_models/REDSGauss.npy')
             else:
                 raise NotImplementedError()
 
@@ -104,9 +103,6 @@ class VideoTestDataset(data.Dataset):
         select_idx = util.index_generation(idx, max_idx, self.opt['N_frames'],
                                            padding=self.opt['padding'])
         imgs_GT = self.imgs_GT[folder].index_select(0, torch.LongTensor(select_idx))
-        
-        # imgs_GT = torch.nn.functional.interpolate(imgs_GT, scale_factor=2, mode='bilinear',
-        #                                 align_corners=True)
 
         if self.opt['degradation_mode'] == 'set':
             '''
@@ -114,21 +110,19 @@ class VideoTestDataset(data.Dataset):
                 imgs_LR_slice = self.kernel_gen.apply(imgs_GT[i])
                 imgs_LR.append(imgs_LR_slice)
                 imgs_SuperLR.append(self.kernel_gen.apply(imgs_LR_slice))
-
             imgs_LR = torch.stack(imgs_LR, dim=0)
             imgs_SuperLR = torch.stack(imgs_SuperLR, dim=0)
             '''
-            imgs_LR, _ = self.kernel_gen.apply(imgs_GT)
+            imgs_LR = self.kernel_gen.apply(imgs_GT)
             imgs_LR = imgs_LR.mul(255).clamp(0, 255).round().div(255)
-            imgs_SuperLR, _ = self.kernel_gen.apply(imgs_LR)
+            imgs_SuperLR = self.kernel_gen.apply(imgs_LR)
 
         elif self.opt['degradation_mode'] == 'preset':
             my_kernel = self.kernel_dict[index]
             self.kernel_gen.set_kernel_directly(my_kernel)
-            imgs_LR, _ = self.kernel_gen.apply(imgs_GT)
+            imgs_LR, kernel = self.kernel_gen.apply(imgs_GT)
             imgs_LR = imgs_LR.mul(255).clamp(0, 255).round().div(255)
-            imgs_SuperLR, _ = self.kernel_gen.apply(imgs_LR)
-            
+            imgs_SuperLR, kernel = self.kernel_gen.apply(imgs_LR)
 
         else:
             kwargs = preprocessing.set_kernel_params()
@@ -144,6 +138,7 @@ class VideoTestDataset(data.Dataset):
             '''
             imgs_LR = kernel_gen.apply(imgs_GT)
             imgs_SuperLR = kernel_gen.apply(imgs_LR)
+
         return {
             'SuperLQs': imgs_SuperLR,
             'LQs': imgs_LR,

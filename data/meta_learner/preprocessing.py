@@ -38,13 +38,21 @@ def _apply_all(func, x):
 
 def set_kernel_params(sigma_x=None, sigma_y=None, theta=None):
     min_sigma = 0.2
-    var_sigma = 4.8
+    var_sigma = 1.8
+    blurlist = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0 ]
+    thetalist = [0.7853981633974483, 0, -0.7853981633974483]
     if sigma_x is None:
         sigma_x = min_sigma + np.random.random_sample() * var_sigma
+        # sigma_x = random.choice(blurlist)
+        
     if sigma_y is None:
         sigma_y = min_sigma + np.random.random_sample() * var_sigma
+        # sigma_y = random.choice(blurlist)
+        
     if theta is None:
         theta = -math.pi + np.random.random_sample() * 2 * math.pi
+        # theta = random.choice(thetalist)
+        
 
     return {'theta': theta, 'sigma': [sigma_x, sigma_y]}
 
@@ -173,6 +181,53 @@ def crop(img_gt, img, scale=2, patch_size=96):
         patch_gt = None
     return patch_gt, patch
         
+
+def crop_fix(img_gt, scale=2, patch_size=96):
+    '''
+    Crop given patches.
+
+    Args:
+        args (list of 'np.array' or 'list of np.array'):
+            Images or lists of images to be cropped.
+            Cropping position is fixed for all images in the single *args.
+
+        patch_size (int, optional):
+        scale (int, optional):
+
+    Return:
+
+    '''
+    import pywt
+
+    # Find the lowest resolution
+    h, w = img_gt.shape[-2] // (scale*2), img_gt.shape[-1] // (scale*2)
+    # T C H W  --> H W T
+    convert = (img_gt.new_tensor([65.481, 128.553, 24.966]) / 255.0 + 16.0).reshape(1,3,1,1)
+    img_y = img_gt.mul(convert).sum(dim=1)
+    _, (ch, cv, _) = pywt.dwt2(img_y, 'haar')
+    # ch, cv become numpy array
+    ch, cv = np.abs(ch), np.abs(cv)
+
+    ch_minned = get_min_in_axis(ch, 9, 'horizontal')
+    cv_minned = get_min_in_axis(cv, 9, 'vertical')
+    mean_ch = np.mean(ch_minned, axis=(1,2))  # T
+    mean_cv = np.mean(cv_minned, axis=(1,2))  # T
+    for i in range(50):
+        py = random.randrange(0, h - patch_size//2 + 1)
+        px = random.randrange(0, w - patch_size//2 + 1)
+        ch_patch = ch_minned[..., py: py+(patch_size//2), px: px+(patch_size//2)]
+        cv_patch = cv_minned[..., py: py+(patch_size//2), px: px+(patch_size//2)]
+        mean_ch_patch, mean_cv_patch = np.mean(ch_patch, axis=(1,2)), np.mean(cv_patch, axis=(1,2))
+        if (mean_ch_patch >= mean_ch).all() and (mean_cv_patch >= mean_cv).all():
+            break
+
+    # patch = img[..., py*2:py*2+patch_size, px*2:px*2+patch_size]
+    if img_gt is not None:
+        patch_gt = img_gt[..., py*2*scale:(py*2+patch_size)*scale, px*2*scale:(px*2+patch_size)*scale]
+    else:
+        patch_gt = None
+    return patch_gt
+
 
 def crop_border(*args, border=[4,4]):
     '''
