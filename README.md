@@ -1,11 +1,6 @@
-# DynaVSR
-## DynaVSR: Dynamic Adaptive Blind VideoSuper-Resolution
-#### Suyoung Lee\*, Myungsub Choi\*, Kyoung Mu Lee
-#### Seoul National University
+# KeMoVSR
+## Kernel Shape Adaptive Memory Network for Blind Video Super-Resolution
 
-This repository is the official implementation of DynaVSR, which is accepted in WACV2021.
-
-Link: [Paper(Arxiv)](http://arxiv.org/abs/2011.04482) | [Paper(CVFOpenAccess)](https://openaccess.thecvf.com/content/WACV2021/papers/Lee_DynaVSR_Dynamic_Adaptive_Blind_Video_Super-Resolution_WACV_2021_paper.pdf) 
 
 ## Directory Structure
 
@@ -44,50 +39,7 @@ project
 |   run_downscaling.sh - scripts for generating LR, SLR images
 |   run_visual.sh - scripts for testing DynaVSR
 | ...
-```
-
-## Dependencies
-
-Current version is tested on:
-
-- Ubuntu 18.04
-- Python==3.7.7
-- numpy==1.17
-- [PyTorch](http://pytorch.org/)==1.3.1, torchvision==0.4.2, cudatoolkit==10.0
-- tensorboard==1.14.0
-- etc: pyyaml, opencv, scikit-image, pandas, imageio, tqdm
-
-``` text
-# Easy installation (using Anaconda environment)
-conda env create -f environment.yml
-conda activate dynavsr
-```
-
-## Model
-
-<center><img src="./figures/dynavsr_architecture.png" width="95%"></center>
-
-## Dataset Preparation
-
-- **[Vimeo90K](http://toflow.csail.mit.edu/)**: Training / **[Vid4](https://drive.google.com/drive/folders/10-gUO6zBeOpWEamrWKCtSkkUFukB9W5m)**: Validation
-- **[REDS](https://seungjunnah.github.io/Datasets/reds)**: Training, Validation
-  - download *train_sharp* data
-- after downloading the dataset, use run_downscaling.sh to make lr, slr images
-  - `sh codes/run_downscaling.sh`
-- make symbolic link to the datasets.
-
-## Downloading Pretrained Models
-- You can download pretrained models using the link: [[Google Drive](https://drive.google.com/drive/folders/1zkeCbsS6Eb6e8IZqb34lxa6gNlZLKGNv?usp=sharing)]
-
-
-## Usage
-
-- To run EDVR, first install [Deformable Convolution](https://arxiv.org/abs/1703.06211). We use [mmdetection](https://github.com/open-mmlab/mmdetection)'s dcn implementation. Please first compile it.
-  ```
-  cd ./codes/models/archs/dcn
-  python setup.py develop
-  ```
-### Training
+```### Training
 Two ways to train DynaVSR network.
 - Distributed training(When using multiple GPUs).
   ```
@@ -121,27 +73,3 @@ Two ways to train DynaVSR network.
 <center><img src="./figures/dynavsr_qualitative1.png" width="100%"></center>
 
 <br>
-
-## References
-If you like the paper, please cite our paper using:
-```
-@inproceedings{lee2021dynavsr,
-  title={DynaVSR: Dynamic Adaptive Blind Video Super-Resolution},
-  author={Lee, Suyoung and Choi, Myungsub and Lee, Kyoung Mu},
-  booktitle={Proceedings of the IEEE/CVF Winter Conference on Applications of Computer Vision},
-  pages={2093--2102},
-  year={2021}
-}
-```
-
-## Update Log
-- [2020-12-09] First code cleanup, Publish pretrained models
-- [2020-12-29] Add arbitrary input data testing script
-- [2021-01-05] Add script for testing 4X scale EDVR models
-- [2021-01-06] Modify scripts for generating LR, SLR frames
-
-## Acknowledgement
-
-The code is built based on 
-
-- [EDVR-Pytorch](https://github.com/xinntao/EDVR)
