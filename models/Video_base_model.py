@@ -120,12 +120,13 @@ class VideoBaseModel(BaseModel):
             else:
                 optim_params = []
                 for k, v in self.netG.named_parameters():
-                    if not 'transformer' in k:
+                    if not 'transformer_y' in k:
                         v.requires_grad = False
                     
-                    # if 'spynet' in k:
-                    #     v.requires_grad = False
-                    else:
+                    if 'spynet' in k:
+                        v.requires_grad = False
+                    
+                    if v.requires_grad == True:
                         logger.warning('Params [{:s}] will optimize.'.format(k))
                         
                     if v.requires_grad:
@@ -169,8 +170,8 @@ class VideoBaseModel(BaseModel):
             self.right_mask_LV = data['extra_data'][3].to(self.device)
         
         if self.opt['network_G']['which_model_G'] == 'BasicVSRplus':
-            self.v_m = 0 
-            self.h_m = 0 
+            self.h_m = data['h_m']  
+            self.v_m = data['v_m'] 
             
         if need_GT:
             self.real_H = data['GT'].to(self.device)
@@ -186,7 +187,10 @@ class VideoBaseModel(BaseModel):
         self.optimizer_G.zero_grad()
         if self.opt['network_G']['which_model_G'] == 'BasicVSRplus':
             self.fake_H = self.netG(self.var_L, self.h_m, self.v_m)
+            
+            
         else: self.fake_H = self.netG(self.var_L)
+        
         l_pix = self.l_pix_w * self.cri_pix(self.fake_H, self.real_H)
         l_pix.backward()
         self.optimizer_G.step()
@@ -220,10 +224,13 @@ class VideoBaseModel(BaseModel):
             l_pix = self.l_pix_w * self.cri_pix(fake_H, self.real_H)
         elif self.opt['network_G']['which_model_G'] == 'BasicVSRplus':
             self.fake_H = self.netG(self.var_L, self.h_m, self.v_m)
+            l_pix = self.l_pix_w * self.cri_pix(self.fake_H, self.real_H)
+        
         else:
             self.fake_H = self.netG(self.var_L)
+            l_pix = self.l_pix_w * self.cri_pix(self.fake_H, self.real_H)
             
-        l_pix = self.l_pix_w * self.cri_pix(self.fake_H, self.real_H)
+            
         self.log_dict['l_pix'] = l_pix.item()
         return l_pix
 

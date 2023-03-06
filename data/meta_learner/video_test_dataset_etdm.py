@@ -91,8 +91,6 @@ class VideoTestDataset(data.Dataset):
             self.kernel_gen = rkg.Degradation(self.kernel_size, self.scale)
             if self.name.lower() == 'vid4':
                 self.kernel_dict = np.load('F:/DynaVSR-master/pretrained_models/Vid4Gauss.npy')
-                with open(file='../../vid4.pickle', mode='rb') as f:
-                    self.kernel_params = pickle.load(f)
             elif self.name.lower() == 'reds':
                 self.kernel_dict = np.load('F:/DynaVSR-master/pretrained_models/REDSGauss.npy')
             else:

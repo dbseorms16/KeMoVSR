@@ -1,5 +1,5 @@
 #### general settings
-name: R_R4_EDVR_MFDN_Scale4
+name: V_V4_EDVR_MFDN_Scale4
 use_tb_logger: false
 model: video_base+lrimgestimator
 distortion: sr
@@ -20,7 +20,7 @@ datasets:
     padding: new_info
     img_type: img
 
-    N_frames: 5
+    N_frames: 7
     use_shuffle: true
     n_workers: 3  # per GPU
     batch_size: 2
@@ -32,26 +32,27 @@ datasets:
 
 
   val:
-    name: REDS
-    mode: video_test
-    dataroot_GT: F:\REDS\reds4-000
-    dataroot_LQ: F:\REDS\reds4-000
+    name: Vid4
+    mode: benchmark
+    dataroot_GT: ../dataset/Vid4/HR
+    dataroot_LQ: ../dataset/Vid4/LR
     cache_data: True
-    N_frames: 5
+    N_frames: 7
     #patch_size: 56
     padding: new_info
   
-    degradation_mode: set
+    degradation_mode: preset
     degradation_type: bicubic
     sigma_x: 1.6
     sigma_y: 1.6
-    theta: 0
+    theta: 0.0
+
 
 #### network structures
 network_G:
   which_model_G: EDVR
   nf: 128
-  nframes: 5
+  nframes: 7
   groups: 8
   front_RBs: 5
   back_RBs: 40
@@ -68,10 +69,10 @@ network_E:
 
 #### path
 path:
-  bicubic_G: ../pretrained_models/BaselineVSR/EDVR_L_REDS_S4.pth
-  fixed_E: ../pretrained_models/MFDN/MFDN_REDS_S4.pth
-  pretrain_model_G: ../pretrained_models/EDVR/REDS_G_S4.pth
-  pretrain_model_E: ../pretrained_models/EDVR/REDS_E_S4.pth
+  bicubic_G: ../pretrained_models/BaselineVSR/EDVR_L_Vimeo_S4.pth
+  fixed_E: ../pretrained_models/MFDN/MFDN_Vimeo_S4.pth
+  pretrain_model_G: ../pretrained_models/EDVR/Vid4_G_S4.pth
+  pretrain_model_E: ../pretrained_models/EDVR/Vid4_E_S4.pth
   strict_load: true
   resume_state: ~
   img_save_path: ../results

@@ -34,10 +34,10 @@ datasets:
   val:
     name: Vid4
     mode: video_test
-    dataroot_GT: F:/Vid4/GT_sample
-    dataroot_LQ: F:/Vid4/GT_sample
+    dataroot_GT: F:/Vid4/GT
+    dataroot_LQ: F:/Vid4/GT
     cache_data: True
-    N_frames: 5
+    N_frames: 7
     #patch_size: 56
     padding: new_info
   

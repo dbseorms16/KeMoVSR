@@ -39,6 +39,8 @@ def create_dataset(dataset_opt, **kwargs):
         from data.Backup.Vimeo90K_dataset import Vimeo90KDataset as D
     elif mode == 'video_test':
         from data.meta_learner.video_test_dataset import VideoTestDataset as D
+    elif mode == 'video_test_etdm':
+        from data.meta_learner.video_test_dataset_etdm import VideoTestDataset as D
     elif mode == 'benchmark':
         from data.meta_learner.video_test_dataset_int import VideoTestDataset as D
     elif mode == 'demo':

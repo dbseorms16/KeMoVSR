@@ -196,24 +196,24 @@ def main():
             h_ms = []
             v_ms = []
             for i in range(B):
-                theta = thetas[i]
-                sigx = sigxs[i]
-                sigy = sigys[i]
+                # theta = thetas[i]
+                # sigx = sigxs[i]
+                # sigy = sigys[i]
             
-                if abs(theta) > 0 and abs(sigx - sigy) > 0.2:
-                    sigx *= 0.7
-                    sigy *= 0.7
+                # if abs(theta) > 0 and abs(sigx - sigy) > 0.2:
+                #     sigx *= 0.7
+                #     sigy *= 0.7
                     
-                h_m = sigx * 0.55
-                v_m = sigy * 0.55
+                # h_m = sigx * 0.55
+                # v_m = sigy * 0.55
                 
-                if sigx < 0.6:
-                    h_m = 0.1
-                if sigy < 0.6:
-                    v_m = 0.1
+                # if sigx < 0.6:
+                #     h_m = 0.1
+                # if sigy < 0.6:
+                #     v_m = 0.1
                     
-                h_ms.append(h_m)
-                v_ms.append(v_m)
+                h_ms.append(1)
+                v_ms.append(1)
             
             train_data['h_m'] = torch.tensor(h_ms, dtype=torch.float).cuda()
             train_data['v_m'] = torch.tensor(v_ms, dtype=torch.float).cuda()
@@ -411,8 +411,8 @@ def main():
                                 if sigy < 0.6:
                                     v_m = 0.1
                                     
-                                val_h_ms.append(h_m)
-                                val_v_ms.append(v_m)
+                                val_h_ms.append(1)
+                                val_v_ms.append(1)
                             
                             val_seg['h_m'] = torch.tensor(val_h_ms, dtype=torch.float).cuda()
                             val_seg['v_m'] = torch.tensor(val_v_ms, dtype=torch.float).cuda()
@@ -427,8 +427,11 @@ def main():
                             rlt_img = visuals['rlt'][7 // 2]
                             rlt_img = util.tensor2img(rlt_img, mode='rgb')  # uint8, RGB
                             gt_img = util.tensor2img(visuals['GT'], mode='rgb')  # uint8, RGB
-                            # imageio.imwrite(os.path.join(train_folder, 'hr_{}.png'.format(idx_d)), gt_img)
-                            # imageio.imwrite(os.path.join(train_folder, 'sr_{}.png'.format(idx_d)), rlt_img)
+                            lq_img = util.tensor2img(val_seg['LQs'][:,7//2], mode='rgb')  # uint8, RGB
+                            
+                            imageio.imwrite(os.path.join(train_folder, 'hr_{}.png'.format(idx_d)), gt_img)
+                            imageio.imwrite(os.path.join(train_folder, 'sr_{}.png'.format(idx_d)), rlt_img)
+                            imageio.imwrite(os.path.join(train_folder, 'lq_{}.png'.format(idx_d)), lq_img)
                             # calculate PSNR
                             psnr = util.calculate_psnr(rlt_img, gt_img)
                             psnr_rlt[folder][idx_d] = psnr

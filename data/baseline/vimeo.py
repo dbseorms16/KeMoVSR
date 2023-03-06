@@ -89,7 +89,6 @@ class Vimeo(data.Dataset):
         seq_lr, _ = self.kernel_gen.apply(seq_hr)
         seq_lr = seq_lr.mul(255).clamp(0, 255).round().div(255)
         # seq_superlr, _ = self.kernel_gen.apply(seq_lr)
-
         return {
                 'LQs': seq_lr,
                 'GT': seq_hr,

@@ -177,13 +177,52 @@ def main():
         orgv_ms = []
         LQs = meta_test_data['LQs']
         B, T, C, H, W = LQs.shape
-        
+        thetas = val_data['kernelparam']['theta']
+        sigxs =  val_data['kernelparam']['sigma'][0]
+        sigys =  val_data['kernelparam']['sigma'][1]
+        # for i in range(B):
+        #     h_m = 0
+        #     v_m = 0.00
+        #     orgh_ms.append(h_m)
+        #     orgv_ms.append(v_m)
+        sigma_x = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0]
+        sigma_y = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0]
+        h_ms = [0,0, 0.0, 0.03, 0.15, 0.23, 0.31, 0.40, 0.46, 0.52, 0.58, 0.64, 0.70, 0.75, 0.81, 0.86, 0.90, 0.94, 0.98, 1.0]
+        v_ms = [0.0, 0.01, 0.04, 0.09, 0.15, 0.20, 0.27, 0.34, 0.41, 0.49, 0.55, 0.68, 0.69, 0.8, 0.8, 0.86, 0.92, 0.96, 1.0]
+
+        # 0.7 30.2928
+        # 0.68 =
+        # 0.67 = 
+        # 0.66 = 
+        # 0.7
+        # 0.65 = 31.2213
+        # 0.6 = 31.6982
+        # 0.55 = 31.8119
         for i in range(B):
-            h_m = 0
-            v_m = 0
-            orgh_ms.append(h_m)
-            orgv_ms.append(v_m)
-        
+            theta = thetas[i]
+            sigx = sigxs[i]
+            x_index = sigma_x.index(sigx)
+            sigy = sigys[i]
+            y_index = sigma_y.index(sigy)
+
+            # if abs(theta) > 0 and abs(sigx - sigy) > 0.2:
+            #     sigx *= 0.7
+            #     sigy *= 0.7
+                
+            # h_m = sigx * 0.55
+            # v_m = sigy * 0.55
+            
+            # if sigx < 0.6:
+            #     h_m = 0.1
+            # if sigy < 0.6:
+            #     v_m = 0.1
+            
+            h_m = h_ms[x_index]
+            v_m = v_ms[y_index]
+            orgh_ms.append(0)
+            # v_m = 0.4
+            orgv_ms.append(1)
+            
         meta_test_data['h_m'] = torch.tensor(orgh_ms, dtype=torch.float).cuda()
         meta_test_data['v_m'] = torch.tensor(orgv_ms, dtype=torch.float).cuda()
         modelcp.feed_data(meta_test_data, need_GT=with_GT)
@@ -199,7 +238,7 @@ def main():
             start_image = util.tensor2img(model_start_visuals['rlt'][center_idx], mode='rgb')
             # Bic_LQs = util.tensor2img(Bic_LQs[center_idx], mode='rgb')
             
-        # imageio.imwrite(os.path.join(maml_train_folder, 'start_{}.png'.format(idx_d)), start_image)
+        imageio.imwrite(os.path.join(maml_train_folder, 'start_{}.png'.format(idx_d)), start_image)
         # imageio.imwrite(os.path.join(maml_train_folder, 'bicubic_{}.png'.format(idx_d+1)), Bic_LQs)
         # Bic_LQs = F.interpolate(meta_test_data['LQs'][:, center_idx], scale_factor=opt['scale'], mode='bicubic', align_corners=True)
         # Bic_LQs = util.tensor2img(Bic_LQs, mode='rgb')
@@ -215,37 +254,48 @@ def main():
         psnr_rlt[0][folder].append(util.calculate_psnr(start_image, hr_image))
         ssim_rlt[0][folder].append(util.calculate_ssim(start_image, hr_image))
 
-        modelcp_m.load_modulated_network(opt['path']['bicubic_G'], modelcp_m.netG)
+        # modelcp_m.load_modulated_network(opt['path']['bicubic_G'], modelcp_m.netG)
 
-        thetas = val_data['kernelparam']['theta']
-        sigxs =  val_data['kernelparam']['sigma'][0]
-        sigys =  val_data['kernelparam']['sigma'][1]
-        val_h_ms = []
-        val_v_ms = []
-        LQs = val_data['LQs']
-        B, T, C, H, W = LQs.shape
+        # thetas = val_data['kernelparam']['theta']
+        # sigxs =  val_data['kernelparam']['sigma'][0]
+        # sigys =  val_data['kernelparam']['sigma'][1]
+        # val_h_ms = []
+        # val_v_ms = []
+        # LQs = val_data['LQs']
+        # B, T, C, H, W = LQs.shape
         
-        for i in range(B):
-            theta = thetas[i]
-            sigx = sigxs[i]
-            sigy = sigys[i]
         
-            if abs(theta) > 0 and abs(sigx - sigy) > 0.2:
-                sigx *= 0.7
-                sigy *= 0.7
-                
-            h_m = sigx * 0.55
-            v_m = sigy * 0.55
+        # sigma_x = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0]
+        # sigma_y = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0]
+        # h_ms = [0,0, 0.0, 0.03, 0.15, 0.23, 0.31, 0.40, 0.46, 0.52, 0.58, 0.64, 0.70, 0.75, 0.81, 0.86, 0.90, 0.94, 0.98, 1.0]
+        # v_ms = [0.0, 0.0, 0.04, 0.16, 0.27, 0.35, 0.43, 0.51, 0.58, 0.64, 0.69, 0.74, 0.79, 0.83, 0.88, 0.92, 0.96, 0.99, 1.0]
+        
+        # for i in range(B):
+        #     theta = thetas[i]
+        #     sigx = sigxs[i]
+        #     x_index = sigma_x.index(sigx)
+        #     sigy = sigys[i]
+        #     y_index = sigma_y.index(sigy)
+
             
-            if sigx < 0.6:
-                h_m = 0.1
-            if sigy < 0.6:
-                v_m = 0.1
+            
+        #     # if abs(theta) > 0 and abs(sigx - sigy) > 0.2:
+        #     #     sigx *= 0.7
+        #     #     sigy *= 0.7
                 
-            val_h_ms.append(h_m)
-            val_v_ms.append(v_m)
-        meta_test_data['h_m'] = torch.tensor(val_h_ms, dtype=torch.float).cuda()
-        meta_test_data['v_m'] = torch.tensor(val_v_ms, dtype=torch.float).cuda()     
+        #     # h_m = sigx * 0.55
+        #     # v_m = sigy * 0.55
+            
+        #     # if sigx < 0.6:
+        #     #     h_m = 0.1
+        #     # if sigy < 0.6:
+        #     #     v_m = 0.1
+            
+        #     h_m = h_ms[x_index]
+        #     v_m = v_ms[y_index]
+            
+        # meta_test_data['h_m'] = torch.tensor(val_h_ms, dtype=torch.float).cuda()
+        # meta_test_data['v_m'] = torch.tensor(val_v_ms, dtype=torch.float).cuda()     
 
         st = time.time()
         
@@ -287,7 +337,7 @@ def main():
         # plt.savefig(os.path.join(maml_train_folder, '{:08d}_kernel.png'.format(idx_d)),  bbox_inches='tight', pad_inches=0)
 
         # # plt.show()
-        # # imageio.imwrite(os.path.join(maml_train_folder, '{:08d}.png'.format(idx_d)), update_image)
+        # imageio.imwrite(os.path.join(maml_train_folder, '{:08d}.png'.format(idx_d)), update_image)
         # imageio.imwrite(os.path.join(maml_train_folder, 'LR_{:08d}.png'.format(idx_d)), bic_lq)
 
         if with_GT:

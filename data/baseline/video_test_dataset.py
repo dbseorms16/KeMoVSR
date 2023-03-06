@@ -49,11 +49,11 @@ class video_test_dataset(data.Dataset):
             self.data_info['folder'].extend([subfolder_name] * max_idx)
             for i in range(max_idx):
                 self.data_info['idx'].append('{}/{}'.format(i, max_idx))
-            border_l = [0] * max_idx
-            for i in range(self.half_N_frames):
-                border_l[i] = 1
-                border_l[max_idx - i - 1] = 1
-            self.data_info['border'].extend(border_l)
+            # border_l = [0] * max_idx
+            # for i in range(self.half_N_frames):
+            #     border_l[i] = 1
+            #     border_l[max_idx - i - 1] = 1
+            # self.data_info['border'].extend(border_l)
 
             # if self.cache_data:
             #     self.imgs_GT[subfolder_name] = util.read_img_seq(img_paths_GT, img_type)
@@ -100,7 +100,7 @@ class video_test_dataset(data.Dataset):
             'GT': imgs_GT,
             'folder': folder,
             'idx': self.data_info['idx'][index],
-            'border': border
+            # 'border': border
         }
 
     def __len__(self):

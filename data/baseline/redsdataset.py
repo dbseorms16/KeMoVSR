@@ -19,7 +19,7 @@ except ImportError:
 from data.meta_learner import preprocessing
 from data import random_kernel_generator as rkg
 logger = logging.getLogger('base')
-
+import imageio
 
 class redsdataset(data.Dataset):
     '''
@@ -123,7 +123,6 @@ class redsdataset(data.Dataset):
         self.scale = self.opt['scale']
         GT_size = self.opt['GT_size']
         key = self.paths_GT[index]
-
         _, name_a, name_b = key.split('\\')
         name_b = name_b.split('.')[0]
         center_frame_idx = int(name_b)
@@ -151,7 +150,7 @@ class redsdataset(data.Dataset):
         # if self.data_type == 'lmdb':
         #     img_GT = util.read_img(self.GT_env, key, (3, 720, 1280))
         # else:
-        img_GT = util.read_img(None, osp.join(self.GT_root, name_a, name_b + '.png'))
+        # img_GT = util.read_img(None, osp.join(self.GT_root, name_a, name_b + '.png'))
 
         #         #### get the GT image (as the center frame)
         # if self.data_type == 'mc':
@@ -165,7 +164,7 @@ class redsdataset(data.Dataset):
         
         img_GTs = []
         for v in neighbor_list:
-            img_GT = util.read_img(None, osp.join(self.GT_root, name_a, name_b + '.png'))
+            img_GT = imageio.imread(osp.join(self.GT_root, name_a, '{:08d}'.format(v) + '.png'))
             img_GTs.append(img_GT)
             
         img_GTs = np.stack(img_GTs, axis=-1)
@@ -173,7 +172,6 @@ class redsdataset(data.Dataset):
         # gen_kwargs = preprocessing.set_kernel_params()
         # self.kernel_gen = rkg.Degradation(self.opt['datasets']['train']['kernel_size'], self.opt['scale'], **gen_kwargs)
         # self.gen_kwargs_l = [gen_kwargs['sigma'][0], gen_kwargs['sigma'][1], gen_kwargs['theta']]
-
         img_GTs = preprocessing.np2tensor(img_GTs)
 
         if self.train:

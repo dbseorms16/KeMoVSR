@@ -39,6 +39,8 @@ def create_dataset(dataset_opt, **kwargs):
         from data.baseline.Vimeo90K_dataset import Vimeo90KDataset as D
     elif mode == 'video_test':
         from data.baseline.VideoTestDataset import VideoTestDataset as D
+    elif mode == 'video_test_etdm':
+        from data.meta_learner.video_test_dataset_etdm import VideoTestDataset as D
     else:
         raise NotImplementedError('Dataset [{:s}] is not recognized.'.format(mode))
     dataset = D(dataset_opt, **kwargs)

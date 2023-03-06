@@ -65,11 +65,11 @@ class VideoTestDataset(data.Dataset):
                 self.data_info['folder'].extend([subfolder_name] * max_idx)
                 for i in range(max_idx):
                     self.data_info['idx'].append('{}/{}'.format(i, max_idx))
-                border_l = [0] * max_idx
-                for i in range(self.half_N_frames):
-                    border_l[i] = 1
-                    border_l[max_idx - i - 1] = 1
-                self.data_info['border'].extend(border_l)
+                # border_l = [0] * max_idx
+                # for i in range(self.half_N_frames):
+                #     border_l[i] = 1
+                #     border_l[max_idx - i - 1] = 1
+                # self.data_info['border'].extend(border_l)
 
                 if self.cache_data:
                     self.imgs_GT[subfolder_name] = util.read_img_seq(img_paths_GT, img_type)
@@ -103,7 +103,7 @@ class VideoTestDataset(data.Dataset):
             self.gen_kwargs_l = [gen_kwargs['sigma'][0], gen_kwargs['sigma'][1], gen_kwargs['theta']]
 
         elif opt['degradation_mode'] == 'preset':
-            self.kernel_gen = rkg.Degradation(self.kernel_size, 2)
+            self.kernel_gen = rkg.Degradation(self.kernel_size, self.scale)
             if self.name.lower() == 'vid4':
                 self.kernel_dict = np.load('F:/DynaVSR-master/pretrained_models/Vid4Gauss.npy')
                 with open(file='F:/DynaVSR-master/vid4.pickle', mode='rb') as f:
@@ -119,11 +119,12 @@ class VideoTestDataset(data.Dataset):
         folder = self.data_info['folder'][index]
         idx, max_idx = self.data_info['idx'][index].split('/')
         idx, max_idx = int(idx), int(max_idx)
-        border = self.data_info['border'][index]
+        # border = self.data_info['border'][index]
 
         select_idx = util.index_generation(idx, max_idx, self.opt['N_frames'],
                                            padding=self.opt['padding'])
-        imgs_GT = self.imgs_GT[folder].index_select(0, torch.LongTensor(select_idx))
+        imgs_GT = self.imgs_GT[folder][0]
+        # imgs_GT = self.imgs_GT[folder].index_select(0, torch.LongTensor(select_idx))
         
         # test_LR = self.imgs_LQ[folder].index_select(0, torch.LongTensor(select_idx))
         # # test_LR, kernel = self.kernel_gen.apply(test_LR)
@@ -131,7 +132,11 @@ class VideoTestDataset(data.Dataset):
         # # kernelparam = {'theta': self.theta, 'sigma': [self.sigx, self.sigy]}
         # test_LR = F.interpolate(test_LR, scale_factor=0.5,
         #         mode='bicubic')
-                    
+        
+        h, w = imgs_GT.shape[-2:]
+        if h // 64 != 0 or w // 64 != 0:
+            imgs_GT = imgs_GT[..., :(h//64)*64, : (w//64)*64]
+            
         if self.opt['degradation_mode'] == 'set':
             '''
             for i in range(imgs_GT.shape[0]):
@@ -169,14 +174,14 @@ class VideoTestDataset(data.Dataset):
             imgs_LR = torch.stack(imgs_LR, dim=0)
             '''
             imgs_LR = kernel_gen.apply(imgs_GT)
-            
+        
         return {
             'LQs': imgs_LR,
             'kernel' : kernel,
             'GT': imgs_GT,
             'folder': folder,
             'idx': self.data_info['idx'][index],
-            'border': border,
+            # 'border': border,
             'kernelparam' : kernelparam
         }
 

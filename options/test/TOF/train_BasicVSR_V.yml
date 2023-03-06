@@ -1,13 +1,13 @@
 #### general settings
-name: basic2002
+name: basic2020_v4
 use_tb_logger: true
 model: video_base
 distortion: sr
-scale: 2
+scale: 4
 gpu_ids: [0] # [0,1,2,3,4,5,6,7]
 kernel_size : 21
 sigma_x: 2.0
-sigma_y: 0.2
+sigma_y: 2.0
 theta: 0
 #### datasets
 datasets:
@@ -32,15 +32,17 @@ datasets:
     name: vid4
     mode: video_test
     # dataroot_GT: F:/Vid4_GTx2
-    dataroot_GT: F:/Vid4/GT
-    dataroot_LQ: F:/Vid4/GT
+    
+    # dataroot_GT: F:/Vid4/GT_test
+    dataroot_GT: F:/Vid4/GT_sam
+    dataroot_LQ: F:/Vid4/GT_sam
     cache_data: True
     N_frames: 7
     padding: new_info
     degradation_mode: set
     degradation_type: impulse
-    sigma_x: 2.0
-    sigma_y: 0.2
+    sigma_x: 0.2
+    sigma_y: 2.0
     theta: 0
 
 #### network structures
@@ -63,7 +65,8 @@ network_E:
 #### path
 path:
   # bicubic_G: F:\DynaVSR-master\experiments\Basic_VSR_metalearning_more\models/100000_G.pth
-  bicubic_G: F:\DynaVSR-master\pretrained_models\NewBasic/vid_0202_baseline.pth
+  bicubic_G: F:/DynaVSR-master/pretrained_models/NewBasic/vimeo_last_S4.pth
+  # bicubic_G: F:\DynaVSR-master\pretrained_models\NewBasic/vimeo_last.pth
   fixed_E: ../pretrained_models/MFDN/MFDN_Vimeo.pth
   pretrain_model_G: ../pretrained_models/EDVR/Vid4_G.pth
   pretrain_model_E: ../pretrained_models/EDVR/Vid4_E.pth
@@ -88,7 +91,7 @@ train:
 
   pixel_criterion: cb
   pixel_weight: 1.0
-  val_freq: !!float 1000
+  val_freq: !!float 5000
   
   maml:
     use_patch: false
@@ -105,4 +108,4 @@ train:
 #### logger
 logger:
   print_freq: 200
-  save_checkpoint_freq: !!float 1000
+  save_checkpoint_freq: !!float 5000

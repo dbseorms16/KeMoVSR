@@ -104,6 +104,11 @@ class VideoTestDataset(data.Dataset):
                                            padding=self.opt['padding'])
         imgs_GT = self.imgs_GT[folder].index_select(0, torch.LongTensor(select_idx))
 
+        
+        h, w = imgs_GT.shape[-2:]
+        if h // 64 != 0 or w // 64 != 0:
+            imgs_GT = imgs_GT[..., :(h//64)*64, : (w//64)*64]
+        
         if self.opt['degradation_mode'] == 'set':
             '''
             for i in range(imgs_GT.shape[0]):

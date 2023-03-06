@@ -50,11 +50,11 @@ class ResidualBlockNoBN(nn.Module):
         
         if ada:
             
-            # self.transformer_theta_1 = nn.Conv2d(mid_channels, mid_channels, (3, 3), bias=False,
-            #                              padding=(1, 1), groups=mid_channels, padding_mode='replicate')
+            self.transformer_theta_1 = nn.Conv2d(mid_channels, mid_channels, (3, 3), bias=False,
+                                         padding=(1, 1), groups=mid_channels, padding_mode='replicate')
             
-            # self.transformer_theta_2 = nn.Conv2d(mid_channels, mid_channels, (3, 3), bias=False,
-            #                              padding=(1, 1), groups=mid_channels, padding_mode='replicate')
+            self.transformer_theta_2 = nn.Conv2d(mid_channels, mid_channels, (3, 3), bias=False,
+                                         padding=(1, 1), groups=mid_channels, padding_mode='replicate')
             
             self.transformer_x_1 = nn.Conv2d(mid_channels, mid_channels, (3, 1), bias=False,
                                          padding=(1, 0), groups=mid_channels, padding_mode='replicate')
@@ -83,8 +83,8 @@ class ResidualBlockNoBN(nn.Module):
             # constant_init(self.transformer_y_1, val=0)
             # constant_init(self.transformer_y_2, val=0)
             
-            # constant_init(self.transformer_x_1, val=0)
-            # constant_init(self.transformer_x_2, val=0)
+            constant_init(self.transformer_theta_1, val=0)
+            constant_init(self.transformer_theta_2, val=0)
 
     def init_weights(self):
 
@@ -106,8 +106,9 @@ class ResidualBlockNoBN(nn.Module):
             # moduled_theta_1 = self.transformer_theta_1(x)
             
             moduled_x_1 = self.transformer_x_1(x) * h_m
-            moduled_y_1 = self.transformer_y_1(x) * v_m
             # moduled_x_1 = self.transformer_x_1(x)
+            moduled_y_1 = self.transformer_y_1(x) * v_m
+            moduled_y_1 = self.transformer_y_1(x) 
             x = x + moduled_x_1 + moduled_y_1
             
             x = self.conv1(x)
@@ -119,6 +120,7 @@ class ResidualBlockNoBN(nn.Module):
             moduled_x_2 = self.transformer_x_2(out) * h_m
             # moduled_x_2 = self.transformer_x_2(out) 
             moduled_y_2 = self.transformer_y_2(out) * v_m
+            # moduled_y_2 = self.transformer_y_2(out)
             
             
             out = out + moduled_x_2 + moduled_y_2
@@ -214,14 +216,14 @@ class BasicVSRPlusPlus(nn.Module):
         # upsampling module
         self.reconstruction = ResidualBlocksWithInputConv(
             5 * mid_channels, mid_channels, 5, ada=True)
-        self.upsample1 = PixelShufflePack(
-            mid_channels, mid_channels, 2, upsample_kernel=3)
+        # self.upsample1 = PixelShufflePack(
+        #     mid_channels, mid_channels, 2, upsample_kernel=3)
         self.upsample2 = PixelShufflePack(
             mid_channels, 64, 2, upsample_kernel=3)
         self.conv_hr = nn.Conv2d(64, 64, 3, 1, 1)
         self.conv_last = nn.Conv2d(64, 3, 3, 1, 1)
         self.img_upsample = nn.Upsample(
-            scale_factor=4, mode='bilinear', align_corners=False)
+            scale_factor=2, mode='bilinear', align_corners=False)
 
         # activation function
         self.lrelu = nn.LeakyReLU(negative_slope=0.1, inplace=True)
@@ -391,7 +393,7 @@ class BasicVSRPlusPlus(nn.Module):
             if self.cpu_cache:
                 hr = hr.cuda()
             hr = self.reconstruction(hr, h_m,v_m)
-            hr = self.lrelu(self.upsample1(hr))
+            # hr = self.lrelu(self.upsample1(hr))
             hr = self.lrelu(self.upsample2(hr))
             
             hr = self.lrelu(self.conv_hr(hr))
