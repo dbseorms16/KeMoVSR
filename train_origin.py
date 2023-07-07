@@ -278,7 +278,7 @@ def main():
                         # multi-GPU testing
                         psnr_rlt = {}  # with border and center frames
                         # if rank == 0:
-                        #     # pbar = util.ProgressBar(len(val_set))
+                        #     pbar = util.ProgressBar(len(val_set))
                         for idx in range(rank, len(val_set), world_size):
                             val_data = val_set[idx]
                             val_data['LQs'].unsqueeze_(0)
@@ -311,19 +311,58 @@ def main():
                                     LQs = LQs.reshape(B*T, C, H, W)
                                     Bic_LQs = F.interpolate(LQs, scale_factor=opt['scale'], mode='bicubic', align_corners=True)
                                     val_data['LQs'] = Bic_LQs.reshape(B, T, C, H*opt['scale'], W*opt['scale'])
+                                
+                                thetas = val_data['kernelparam']['theta']
+                                sigxs =  val_data['kernelparam']['sigma'][0]
+                                sigys =  val_data['kernelparam']['sigma'][1]
+                                val_h_ms = []
+                                val_v_ms = []
+                                LQs = val_data['LQs']
+                                B, T, C, H, W = LQs.shape
+                                
+                                for i in range(B):
+                                    theta = thetas
+                                    sigx = sigxs
+                                    sigy = sigys
+                                
+                                    if abs(theta) > 0 and abs(sigx - sigy) > 0.2:
+                                        sigx *= 0.7
+                                        sigy *= 0.7
+                                        
+                                    h_m = sigx * 0.55
+                                    v_m = sigy * 0.55
+                                    
+                                    if sigx < 0.6:
+                                        h_m = 0.1
+                                    if sigy < 0.6:
+                                        v_m = 0.1
+                                        
+                                    val_h_ms.append(1)
+                                    val_v_ms.append(1)
+                                
+                                val_data['h_m'] = torch.tensor(val_h_ms, dtype=torch.float).cuda()
+                                val_data['v_m'] = torch.tensor(val_v_ms, dtype=torch.float).cuda()
+                                
                                 model.feed_data(val_data)
                                 model.test()
                                 visuals = model.get_current_visuals()
-                                rlt_img = util.tensor2img(visuals['rlt'], mode='rgb')  # uint8, RGB
-                                gt_img = util.tensor2img(visuals['GT'], mode='rgb')  # uint8, RGB
+                                # rlt_img = util.tensor2img(visuals['rlt'], mode='rgb')  # uint8, RGB
+                                # gt_img = util.tensor2img(visuals['GT'], mode='rgb')  # uint8, RGB
+                                
+                                rlt_img = visuals['rlt'][7 // 2]
+                                gt_img = visuals['GT'][7 // 2]
+                                rlt_img = util.tensor2img(rlt_img, mode='rgb')  # uint8, RGB
+                                gt_img = util.tensor2img(gt_img, mode='rgb')  # uint8, RGB
+                                # lq_img = util.tensor2img(val_seg['LQs'][:,7//2], mode='rgb')  # uint8, RGB
+                            
                                 # imageio.imwrite(os.path.join(train_folder, 'hr.png'), gt_img)
                                 # imageio.imwrite(os.path.join(train_folder, 'sr.png'), rlt_img)
                                 # calculate PSNR
                                 psnr_rlt[folder][idx_d] = util.calculate_psnr(rlt_img, gt_img)
 
-                                if rank == 0:
-                                    for _ in range(world_size):
-                                        pbar.update('Test {} - {}/{}'.format(folder, idx_d, max_idx))
+                                # if rank == 0:
+                                #     for _ in range(world_size):
+                                #         pbar.update('Test {} - {}/{}'.format(folder, idx_d, max_idx))
                         # # collect data
                         for _, v in psnr_rlt.items():
                             dist.reduce(v, 0)

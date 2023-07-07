@@ -221,7 +221,7 @@ def main():
             v_m = v_ms[y_index]
             orgh_ms.append(0)
             # v_m = 0.4
-            orgv_ms.append(1)
+            orgv_ms.append(0)
             
         meta_test_data['h_m'] = torch.tensor(orgh_ms, dtype=torch.float).cuda()
         meta_test_data['v_m'] = torch.tensor(orgv_ms, dtype=torch.float).cuda()
@@ -250,7 +250,10 @@ def main():
         # imageio.imwrite(os.path.join(maml_train_folder, 'samplingresults_{}.png'.format(idx_d)), samplingresults)
         # imageio.imwrite(os.path.join(maml_train_folder, 'LR_{}.png'.format(idx_d)), LQs)
         # modelcp.netG = deepcopy(model.netG)
-        
+        print(start_image.shape)
+        print(start_image.shape)
+        print(start_image.shape)
+        print(start_image.hr_image)
         psnr_rlt[0][folder].append(util.calculate_psnr(start_image, hr_image))
         ssim_rlt[0][folder].append(util.calculate_ssim(start_image, hr_image))
 

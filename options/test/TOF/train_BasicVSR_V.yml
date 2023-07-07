@@ -34,15 +34,15 @@ datasets:
     # dataroot_GT: F:/Vid4_GTx2
     
     # dataroot_GT: F:/Vid4/GT_test
-    dataroot_GT: F:/Vid4/GT_sam
-    dataroot_LQ: F:/Vid4/GT_sam
+    dataroot_GT: /home/jsyun/project/VSR_data/test_realdata/
+    dataroot_LQ: /home/jsyun/project/VSR_data/test_realdata/
     cache_data: True
     N_frames: 7
     padding: new_info
     degradation_mode: set
     degradation_type: impulse
     sigma_x: 0.2
-    sigma_y: 2.0
+    sigma_y: 0.2
     theta: 0
 
 #### network structures
@@ -65,11 +65,11 @@ network_E:
 #### path
 path:
   # bicubic_G: F:\DynaVSR-master\experiments\Basic_VSR_metalearning_more\models/100000_G.pth
-  bicubic_G: F:/DynaVSR-master/pretrained_models/NewBasic/vimeo_last_S4.pth
+  bicubic_G: ./pretrained_models/NewBasic/vimeo_last_S4.pth
   # bicubic_G: F:\DynaVSR-master\pretrained_models\NewBasic/vimeo_last.pth
-  fixed_E: ../pretrained_models/MFDN/MFDN_Vimeo.pth
-  pretrain_model_G: ../pretrained_models/EDVR/Vid4_G.pth
-  pretrain_model_E: ../pretrained_models/EDVR/Vid4_E.pth
+  fixed_E: ./pretrained_models/MFDN/MFDN_Vimeo.pth
+  pretrain_model_G: ./pretrained_models/EDVR/Vid4_G.pth
+  pretrain_model_E: ./pretrained_models/EDVR/Vid4_E.pth
   strict_load: true
   resume_state: ~
   img_save_path: ../results

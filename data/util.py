@@ -101,7 +101,11 @@ def read_img_seq(path, img_type='img'):
     else:
         img_path_l = sorted(glob.glob(os.path.join(path, '*')))
     if img_type == 'img':
-        img_l = [read_img(None, v) for v in img_path_l]
+        #### 여기
+        img_l = [read_img(None, v)[:600,:600,:] for v in img_path_l]
+        # for v in img_path_l:
+        #     print(read_img(None, v)[:600,:600,:].shape)
+        #     print(read_img(None, v).shape)
     else:
         img_l = [np.load(v) for v in img_path_l]
     # stack to Torch tensor

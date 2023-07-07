@@ -38,6 +38,7 @@ class VideoTestDataset(data.Dataset):
 
         self.data_type = self.opt['data_type']
         self.data_info = {'path_LQ': [], 'path_GT': [], 'folder': [], 'idx': [], 'border': []}
+        
         if self.data_type == 'lmdb':
             raise ValueError('No need to use LMDB during validation/test.')
         #### Generate data info and cache data
@@ -46,7 +47,8 @@ class VideoTestDataset(data.Dataset):
             if self.name.lower() == 'vid4':
                 img_type = 'img'
                 subfolders_GT = util.glob_file_list(self.GT_root)
-                # subfolders_LQ = util.glob_file_list(self.LQ_root)
+                ### 여기
+                subfolders_LQ = util.glob_file_list(self.LQ_root)
             elif self.name.lower() == 'reds':
                 img_type = 'img'
                 list_hr_seq = util.glob_file_list(self.GT_root)
@@ -57,8 +59,13 @@ class VideoTestDataset(data.Dataset):
                 subfolders_GT = util.glob_file_list(self.GT_root)
 
             for subfolder_GT in subfolders_GT:
+                ### 여기
+                subfolder_GT = subfolder_GT + '/gt'
+                
                 subfolder_name = osp.basename(subfolder_GT)
+                
                 img_paths_GT = util.glob_file_list(subfolder_GT)
+                
                 max_idx = len(img_paths_GT)
 
                 self.data_info['path_GT'].extend(img_paths_GT)
@@ -70,17 +77,21 @@ class VideoTestDataset(data.Dataset):
                 #     border_l[i] = 1
                 #     border_l[max_idx - i - 1] = 1
                 # self.data_info['border'].extend(border_l)
-
                 if self.cache_data:
                     self.imgs_GT[subfolder_name] = util.read_img_seq(img_paths_GT, img_type)
-            
-            # for subfolder_LQ in subfolders_LQ:
-            #     subfolder_name = osp.basename(subfolder_LQ)
-            #     img_paths_LQ = util.glob_file_list(subfolder_LQ)
-            #     max_idx = len(subfolder_LQ)
 
-            #     if self.cache_data:
-            #         self.imgs_LQ[subfolder_name] = util.read_img_seq(img_paths_LQ, img_type)
+            ### 여기
+            for subfolder_LQ in subfolders_LQ:
+                subfolder_LQ = subfolder_LQ + '/blur'
+                subfolder_name = osp.basename(subfolder_LQ)
+                img_paths_LQ = util.glob_file_list(subfolder_LQ)
+                max_idx = len(subfolder_LQ)
+                
+                self.data_info['path_LQ'].extend(subfolder_LQ)
+                self.data_info['LQ_folder'].extend([subfolder_name] * max_idx)
+                
+                if self.cache_data:
+                    self.imgs_LQ[subfolder_name] = util.read_img_seq(img_paths_LQ, img_type)
                     
         elif opt['name'].lower() in ['vimeo90k-test']:
             pass  # TODO
@@ -123,8 +134,11 @@ class VideoTestDataset(data.Dataset):
 
         select_idx = util.index_generation(idx, max_idx, self.opt['N_frames'],
                                            padding=self.opt['padding'])
-        imgs_GT = self.imgs_GT[folder][0]
-        # imgs_GT = self.imgs_GT[folder].index_select(0, torch.LongTensor(select_idx))
+        # imgs_GT = self.imgs_GT[folder][0]
+        imgs_GT = self.imgs_GT[folder].index_select(0, torch.LongTensor(select_idx))
+        
+        ### 여기
+        imgs_LQ = self.imgs_LQ[folder].index_select(0, torch.LongTensor(select_idx))
         
         # test_LR = self.imgs_LQ[folder].index_select(0, torch.LongTensor(select_idx))
         # # test_LR, kernel = self.kernel_gen.apply(test_LR)
@@ -146,7 +160,9 @@ class VideoTestDataset(data.Dataset):
             imgs_LR = torch.stack(imgs_LR, dim=0)
             '''
             
-            imgs_LR, kernel = self.kernel_gen.apply(imgs_GT)
+            # imgs_LR, kernel = self.kernel_gen.apply(imgs_GT)
+            ### 여기
+            imgs_LR, kernel = self.kernel_gen.apply(imgs_LQ)
             imgs_LR = imgs_LR.mul(255).clamp(0, 255).round().div(255)
             kernelparam = {'theta': self.theta, 'sigma': [self.sigx, self.sigy]}
             

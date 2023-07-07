@@ -90,3 +90,12 @@ python train_origin.py -opt options/test/TOF/train_BasicVSR_R.yml
 python train_origin.py -opt options/test/TOF/train_BasicVSR_V.yml
 
 python test.py -opt options/test/TOF/train_BasicVSR_V.yml
+
+http://data.cv.snu.ac.kr:8008/webdav/dataset/REDS/train_sharp.zip
+
+http://data.cv.snu.ac.kr:8008/webdav/dataset/REDS/val_sharp.zip
+
+wget http://data.csail.mit.edu/tofu/dataset/vimeo_septuplet.zip
+
+
+wget --load-cookies ~/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies ~/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1xoM26eXQz-0qcXf1XpudL2se8GkQ9PJd' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1xoM26eXQz-0qcXf1XpudL2se8GkQ9PJd" -O g.png 

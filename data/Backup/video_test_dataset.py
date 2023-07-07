@@ -71,7 +71,7 @@ class VideoTestDataset(data.Dataset):
             img_GT = self.imgs_GT[folder][idx]
         else:
             pass  # TODO
-
+        
         return {
             'LQs': imgs_LQ,
             'GT': img_GT,

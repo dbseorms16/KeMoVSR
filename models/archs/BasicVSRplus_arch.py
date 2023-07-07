@@ -185,7 +185,7 @@ class BasicVSRPlusPlus(nn.Module):
 
         # feature extraction module
         if is_low_res_input:
-            self.feat_extract = ResidualBlocksWithInputConv(3, mid_channels, 5, ada=True)
+            self.feat_extract = ResidualBlocksWithInputConv(3, mid_channels, 5, ada=False)
 
         else:
             self.feat_extract = nn.Sequential(
@@ -194,7 +194,7 @@ class BasicVSRPlusPlus(nn.Module):
                 nn.Conv2d(mid_channels, mid_channels, 3, 2, 1),
                 
                 nn.LeakyReLU(negative_slope=0.1, inplace=True),
-                ResidualBlocksWithInputConv(mid_channels, mid_channels, 5, ada=True))
+                ResidualBlocksWithInputConv(mid_channels, mid_channels, 5, ada=False))
         
         # propagation branches
         self.deform_align = nn.ModuleDict()
@@ -213,7 +213,7 @@ class BasicVSRPlusPlus(nn.Module):
 
         # upsampling module
         self.reconstruction = ResidualBlocksWithInputConv(
-            5 * mid_channels, mid_channels, 5, ada=True)
+            5 * mid_channels, mid_channels, 5, ada=False)
         self.upsample1 = PixelShufflePack(
             mid_channels, mid_channels, 2, upsample_kernel=3)
         self.upsample2 = PixelShufflePack(

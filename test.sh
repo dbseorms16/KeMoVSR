@@ -1,0 +1,1 @@
+python test.py -opt options/test/TOF/train_BasicVSR_V.yml

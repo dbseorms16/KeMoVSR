@@ -49,7 +49,7 @@ class LRimgestimator_Model(BaseModel):
 
         self.netE = networks.define_E(opt).to(self.device)
         if opt['dist']:
-            self.netE = DistributedDataParallel(self.netE, device_ids=[torch.cuda.current_device()])
+            self.netE = DistributedDataParallel(self.netE, device_ids=[torch.cuda.current_device()], find_unused_parameters=True)
         else:
             self.netE = DataParallel(self.netE)
         self.load()

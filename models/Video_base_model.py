@@ -26,7 +26,7 @@ class VideoBaseModel(BaseModel):
         # define network and load pretrained models
         self.netG = networks.define_G(opt).to(self.device)
         if opt['dist']:
-            self.netG = DistributedDataParallel(self.netG, device_ids=[torch.cuda.current_device()])
+            self.netG = DistributedDataParallel(self.netG, device_ids=[torch.cuda.current_device()], find_unused_parameters=True)
         else:
             self.netG = DataParallel(self.netG)
         # print network
@@ -120,8 +120,8 @@ class VideoBaseModel(BaseModel):
             else:
                 optim_params = []
                 for k, v in self.netG.named_parameters():
-                    if not 'transformer_y' in k:
-                        v.requires_grad = False
+                    # if not 'transformer_y' in k:
+                    #     v.requires_grad = False
                     
                     if 'spynet' in k:
                         v.requires_grad = False

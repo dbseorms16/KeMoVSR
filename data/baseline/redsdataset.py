@@ -123,8 +123,10 @@ class redsdataset(data.Dataset):
         self.scale = self.opt['scale']
         GT_size = self.opt['GT_size']
         key = self.paths_GT[index]
-        _, name_a, name_b = key.split('\\')
-        name_b = name_b.split('.')[0]
+        
+        name = key.split('/')
+        name_a = name[-2]
+        name_b = name[-1].split('.')[0]
         center_frame_idx = int(name_b)
 
         #### determine the neighbor frames

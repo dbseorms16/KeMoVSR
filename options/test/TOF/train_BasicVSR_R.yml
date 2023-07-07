@@ -4,7 +4,7 @@ use_tb_logger: true
 model: video_base
 distortion: sr
 scale:  4
-gpu_ids: [0] # [0,1,2,3,4,5,6,7]
+gpu_ids: [0,1,2,3,4,5,6,7] # [0,1,2,3,4,5,6,7]
 kernel_size : 21
 sigma_x: 0.2
 sigma_y: 0.2
@@ -17,23 +17,23 @@ datasets:
     interval_list: [1]
     random_reverse: false
     border_mode: false
-    dataroot_GT: 'C:/Users/user/Desktop/BasicVSR_PlusPlus-master/data/REDS/train_sharp'
-    dataroot_LQ: 'C:/Users/user/Desktop/BasicVSR_PlusPlus-master/data/REDS/train_sharp'
+    dataroot_GT: '/home/jsyun/project/VSR_test/dataset/train_sharp'
+    dataroot_LQ: '/home/jsyun/project/VSR_test/dataset/train_sharp'
     img_type: img
     N_frames: 7
     use_shuffle: true
-    n_workers: 8  # per GPU
-    batch_size: 4
+    n_workers: 0  # per GPU
+    batch_size: 40
     patch_size: 64
     use_flip: true
     use_rot: true
     kernel_size: 21
     color: RGB
   val:
-    name: vid4
+    name: REDS
     mode: video_test
-    dataroot_GT: F:\REDS\val0
-    dataroot_LQ: F:\REDS\val0
+    dataroot_GT: /home/jsyun/project/VSR_test/dataset/test
+    dataroot_LQ: /home/jsyun/project/VSR_test/dataset/test
     cache_data: True
     N_frames: 7
     padding: new_info
@@ -61,10 +61,10 @@ network_E:
   in_nc: 3
 #### path
 path:
-  bicubic_G: F:\DynaVSR-master\pretrained_models\BasicVSR/res_0202_baseline.pth
-  fixed_E: ../pretrained_models/MFDN/MFDN_Vimeo.pth
-  pretrain_model_G: ../pretrained_models/TOF/Vid4_G.pth
-  pretrain_model_E: ../pretrained_models/TOF/Vid4_E.pth
+  bicubic_G: ./pretrained_models/MFDN/MFDN_Vimeo.pth
+  fixed_E: ./pretrained_models/MFDN/MFDN_Vimeo.pth
+  pretrain_model_G: ./pretrained_models/TOF/Vid4_G.pth
+  pretrain_model_E: ./pretrained_models/TOF/Vid4_E.pth
   strict_load: true
   resume_state: ~
   img_save_path: ../results
@@ -92,5 +92,5 @@ train:
 
 #### logger
 logger:
-  print_freq: 200
+  print_freq: 500
   save_checkpoint_freq: !!float 5000 # 1e3

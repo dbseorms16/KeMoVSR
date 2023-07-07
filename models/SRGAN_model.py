@@ -23,14 +23,14 @@ class SRGANModel(BaseModel):
         # define networks and load pretrained models
         self.netG = networks.define_G(opt).to(self.device)
         if opt['dist']:
-            self.netG = DistributedDataParallel(self.netG, device_ids=[torch.cuda.current_device()])
+            self.netG = DistributedDataParallel(self.netG, device_ids=[torch.cuda.current_device()], find_unused_parameters=True)
         else:
             self.netG = DataParallel(self.netG)
         if self.is_train:
             self.netD = networks.define_D(opt).to(self.device)
             if opt['dist']:
                 self.netD = DistributedDataParallel(self.netD,
-                                                    device_ids=[torch.cuda.current_device()])
+                                                    device_ids=[torch.cuda.current_device()], find_unused_parameters=True)
             else:
                 self.netD = DataParallel(self.netD)
 

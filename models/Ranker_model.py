@@ -29,7 +29,7 @@ class Classifier_Model(BaseModel):
         # define networks and load pretrained models
         self.netC = networks.define_C(opt).to(self.device)
         if opt['dist']:
-            self.netC = DistributedDataParallel(self.netC, device_ids=[torch.cuda.current_device()])
+            self.netC = DistributedDataParallel(self.netC, device_ids=[torch.cuda.current_device()], find_unused_parameters=True)
         else:
             self.netC = DataParallel(self.netC)
         self.load()
